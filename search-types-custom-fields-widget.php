@@ -4,7 +4,7 @@
 Plugin Name: Search Types Custom Fields Widget
 Plugin URI: http://alttypes.wordpress.com/
 Description: Widget for searching Types custom fields and custom taxonomies.
-Version: 0.4.1.1
+Version: 0.4.2
 Author: Magenta Cuda
 Author URI: http://magentacuda.wordpress.com
 License: GPL2
@@ -37,7 +37,7 @@ class Search_Types_Custom_Fields_Widget extends WP_Widget {
     # end of user configurable constants
     
     const OPTIONAL_TEXT_VALUE_SUFFIX = '-stcfw-optional-text-value';   # suffix to append to optional text input for a search field
-    public static $get_form_for_post_type = 'get_form_for_post_type';
+    const GET_FORM_FOR_POST_TYPE = 'get_form_for_post_type';
 
 	public function __construct() {
 		parent::__construct(
@@ -58,14 +58,14 @@ class Search_Types_Custom_Fields_Widget extends WP_Widget {
         extract( $args );
         #error_log( '##### Search_Types_Custom_Fields_Widget::widget():$instance=' . print_r( $instance, TRUE ) );
 ?>
-<form id="search-custom-posts-by-custom-fields-widget-<?php echo $this->number; ?>" method="get" action="<?php echo esc_url( home_url( '/' ) ); ?>">
-<input id="magic_fields_search_form" name="magic_fields_search_form" type="hidden" value="magic-fields-search">
-<input id="magic_fields_search_widget_option" name="magic_fields_search_widget_option" type="hidden"
+<form id="search-types-custom-fields-widget-<?php echo $this->number; ?>" method="get" action="<?php echo esc_url( home_url( '/' ) ); ?>">
+<input id="search_types_custom_fields_form" name="search_types_custom_fields_form" type="hidden" value="types-fields-search">
+<input id="search_types_custom_fields_widget_option" name="search_types_custom_fields_widget_option" type="hidden"
     value="<?php echo $this->option_name; ?>">
-<input id="magic_fields_search_widget_number" name="magic_fields_search_widget_number" type="hidden"
+<input id="search_types_custom_fields_widget_number" name="search_types_custom_fields_widget_number" type="hidden"
     value="<?php echo $this->number; ?>">
 <h2>Search:</h2>
-<div class="search-custom-posts-by-custom-fields-widget-parameter" style="padding:5px 10px;border:2px solid black;margin:5px;">
+<div class="search-types-custom-fields-widget-parameter" style="padding:5px 10px;border:2px solid black;margin:5px;">
 <h3>post type:</h3>
 <select id="post_type" name="post_type" required style="width:100%;">
 <option value="no-selection">--select post type--</option>
@@ -89,28 +89,39 @@ EOD
 ?>
 </select>
 </div>
-<div id="magic-fields-parameters"></div>
-<input type="submit" value="Search">
+<div id="search-types-custom-fields-parameters"></div>
+Results should satisfy 
+<input type="radio" name="search_types_custom_fields_and_or" value="and" checked><strong>All</strong>
+<input type="radio" name="search_types_custom_fields_and_or" value="or"><strong>Any</strong>
+of the selected search conditions.
+<input id="search-types-custom-fields-submit" type="submit" value="Search" disabled>
 </form>
 <script>
-jQuery("form#search-custom-posts-by-custom-fields-widget-<?php echo $this->number; ?> select#post_type").change(function(){
-    //console.log("select#post_type change");
+jQuery("form#search-types-custom-fields-widget-<?php echo $this->number; ?> select#post_type").change(function(){
+    // console.log("select#post_type change");
     // send an AJAX request for the specific search form for the selected post type
     jQuery.post(
-        '<?php echo admin_url( 'admin-ajax.php' ); ?>',
+        "<?php echo admin_url( 'admin-ajax.php' ); ?>",
         {
-            action : '<?php echo Search_Types_Custom_Fields_Widget::$get_form_for_post_type; ?>',
-            post_type: jQuery("form#search-custom-posts-by-custom-fields-widget-<?php echo $this->number; ?> select#post_type option:selected")
-                .val(),
-            magic_fields_search_widget_option:
-                jQuery("form#search-custom-posts-by-custom-fields-widget-<?php echo $this->number; ?> input#magic_fields_search_widget_option").val(),
-            magic_fields_search_widget_number:
-                jQuery("form#search-custom-posts-by-custom-fields-widget-<?php echo $this->number; ?> input#magic_fields_search_widget_number").val()
+            action:
+                "<?php echo Search_Types_Custom_Fields_Widget::GET_FORM_FOR_POST_TYPE; ?>",
+            post_type:
+                jQuery("form#search-types-custom-fields-widget-<?php echo $this->number; ?>"
+                    +" select#post_type option:selected").val(),
+            search_types_custom_fields_widget_option:
+                jQuery("form#search-types-custom-fields-widget-<?php echo $this->number; ?>"
+                    +" input#search_types_custom_fields_widget_option").val(),
+            search_types_custom_fields_widget_number:
+                jQuery("form#search-types-custom-fields-widget-<?php echo $this->number; ?>"
+                    +" input#search_types_custom_fields_widget_number").val()
         },
         function(response){
             //console.log(response);
             // show the form returned by AJAX
-            jQuery("form#search-custom-posts-by-custom-fields-widget-<?php echo $this->number; ?> div#magic-fields-parameters").html(response);
+            jQuery("form#search-types-custom-fields-widget-<?php echo $this->number; ?>"
+                +" div#search-types-custom-fields-parameters").html(response);
+            jQuery("form#search-types-custom-fields-widget-<?php echo $this->number; ?>"
+                +" input#search-types-custom-fields-submit").prop("disabled",false);
         }
     );
 });
@@ -232,7 +243,7 @@ EOD;
             $fields['pst-std-post_content'] = (object) array( 'label' => 'Post Content', 'count' => $type->count );
             $sql = <<<EOD
                 SELECT COUNT( DISTINCT a.post_parent ) FROM $wpdb->posts a, $wpdb->posts p
-                WHERE a.post_parent = p.ID AND p.post_type = "$name"
+                WHERE a.post_type = "attachment" AND a.post_parent = p.ID AND p.post_type = "$name" AND p.post_status = "publish"
 EOD;
             #error_log( '##### Search_Types_Custom_Fields_Widget::form():$sql=' . $sql );
             $fields['pst-std-attachment']   = (object) array( 'label' => 'Attachment', 'count' => $wpdb->get_var( $sql ) );
@@ -288,6 +299,22 @@ jQuery("button.scpbcfw-display-button").click(function(event){
         if ( !$t1['minutes'] && !$t1['hours'] ) { return array( $t0, $t0 + 86399 ); }
         return array( $t0, $t0 + 59 );
     }
+    
+    public static function &join_arrays( $op, &$arr0, &$arr1 ) {
+        $is_arr0 = is_array( $arr0 );
+        $is_arr1 = is_array( $arr1 );
+        if ( $is_arr0 || $is_arr1 ) {
+            if ( $op == 'AND' ) {
+                if ( $is_arr0 && $is_arr1 ) { $arr = array_intersect( $arr0, $arr1 ); }
+                else if ( $is_arr0 ) { $arr = $arr0; } else { $arr = $arr1; }
+            } else {
+                if ( $is_arr0 && $is_arr1 ) { $arr = array_unique( array_merge( $arr0, $arr1 ) ); }
+                else if ( $is_arr0 ) { $arr = $arr0; } else { $arr = $arr1; }
+            }
+            return $arr;
+        }
+        return FALSE;
+    }
 }
 
 add_action( 'widgets_init', function() {
@@ -295,26 +322,24 @@ add_action( 'widgets_init', function() {
 } );
 
 if ( is_admin() ) {
-    #error_log( '##### add_action( \'wp_ajax_nopriv_'
-    #    . Search_Types_Custom_Fields_Widget::$get_form_for_post_type . ', ... )' );
-    add_action( 'wp_ajax_' . Search_Types_Custom_Fields_Widget::$get_form_for_post_type, function() {
-        do_action( 'wp_ajax_nopriv_' . Search_Types_Custom_Fields_Widget::$get_form_for_post_type );
+    add_action( 'wp_ajax_' . Search_Types_Custom_Fields_Widget::GET_FORM_FOR_POST_TYPE, function() {
+        do_action( 'wp_ajax_nopriv_' . Search_Types_Custom_Fields_Widget::GET_FORM_FOR_POST_TYPE );
     } );
-    add_action( 'wp_ajax_nopriv_' . Search_Types_Custom_Fields_Widget::$get_form_for_post_type, function() {
+    add_action( 'wp_ajax_nopriv_' . Search_Types_Custom_Fields_Widget::GET_FORM_FOR_POST_TYPE, function() {
         # build the search form for the post type in the AJAX request
         global $wpdb;
         $SQL_LIMIT = Search_Types_Custom_Fields_Widget::SQL_LIMIT;
 ?>
 <h4>Please specify search criteria:<h4>
 <?php
-        #error_log( '##### action:wp_ajax_nopriv_' . Search_Types_Custom_Fields_Widget::$get_form_for_post_type
+        #error_log( '##### action:wp_ajax_nopriv_' . Search_Types_Custom_Fields_Widget::GET_FORM_FOR_POST_TYPE
         #    . ':$_REQUEST=' . print_r( $_REQUEST, TRUE ) );
-        $option = get_option( $_REQUEST['magic_fields_search_widget_option'] );
-        #error_log( '##### wp_ajax_nopriv_' . Search_Types_Custom_Fields_Widget::$get_form_for_post_type
+        $option = get_option( $_REQUEST['search_types_custom_fields_widget_option'] );
+        #error_log( '##### wp_ajax_nopriv_' . Search_Types_Custom_Fields_Widget::GET_FORM_FOR_POST_TYPE
         #    . ':$option=' . print_r( $option, TRUE ) );
-        $widget_number = $_REQUEST['magic_fields_search_widget_number'];
-        $selected = $option[$_REQUEST['magic_fields_search_widget_number']][$_REQUEST['post_type']];
-        #error_log( '##### wp_ajax_nopriv_' . Search_Types_Custom_Fields_Widget::$get_form_for_post_type
+        $widget_number = $_REQUEST['search_types_custom_fields_widget_number'];
+        $selected = $option[$widget_number][$_REQUEST['post_type']];
+        #error_log( '##### wp_ajax_nopriv_' . Search_Types_Custom_Fields_Widget::GET_FORM_FOR_POST_TYPE
         #    . ':$selected=' . print_r( $selected, TRUE ) );
         # get all terms for all taxonomies for the selected post type
         $sql = <<<EOD
@@ -324,10 +349,10 @@ if ( is_admin() ) {
                     AND p.post_type = "$_REQUEST[post_type]"
                 GROUP BY x.taxonomy, r.term_taxonomy_id ORDER BY x.taxonomy, r.term_taxonomy_id
 EOD;
-        #error_log( '##### action:wp_ajax_nopriv_' . Search_Types_Custom_Fields_Widget::$get_form_for_post_type
+        #error_log( '##### action:wp_ajax_nopriv_' . Search_Types_Custom_Fields_Widget::GET_FORM_FOR_POST_TYPE
         #    . ':$sql=' . $sql );
         $results = $wpdb->get_results( $sql, OBJECT );
-        #error_log( '##### action:wp_ajax_nopriv_' . Search_Types_Custom_Fields_Widget::$get_form_for_post_type
+        #error_log( '##### action:wp_ajax_nopriv_' . Search_Types_Custom_Fields_Widget::GET_FORM_FOR_POST_TYPE
         #    . ':$results=' . print_r( $results, TRUE ) );
         $taxonomies = get_taxonomies( '', 'objects' );
         # restructure the results for displaying by taxonomy
@@ -379,10 +404,10 @@ EOD;
                     AND meta_key IN $selected_imploded AND p.post_type = "$_REQUEST[post_type]"
                 GROUP BY m.meta_key, m.meta_value
 EOD;
-        #error_log( '##### action:wp_ajax_nopriv_' . Search_Types_Custom_Fields_Widget::$get_form_for_post_type
+        #error_log( '##### action:wp_ajax_nopriv_' . Search_Types_Custom_Fields_Widget::GET_FORM_FOR_POST_TYPE
         #    . ':$sql=' . $sql );
         $results = $wpdb->get_results( $sql, OBJECT );
-        #error_log( '##### action:wp_ajax_nopriv_' . Search_Types_Custom_Fields_Widget::$get_form_for_post_type
+        #error_log( '##### action:wp_ajax_nopriv_' . Search_Types_Custom_Fields_Widget::GET_FORM_FOR_POST_TYPE
         #    . ':$results=' . print_r( $results, TRUE ) );
         $wpcf_fields = get_option( 'wpcf-fields', array() );
         # prepare the results for use in checkboxes - need value, count of value and field labels
@@ -431,9 +456,9 @@ EOD;
                         GROUP BY m.meta_value
 EOD;
             $results = $wpdb->get_resultS( $sql, OBJECT_K );
-            #error_log( '##### action:wp_ajax_nopriv_' . Search_Types_Custom_Fields_Widget::$get_form_for_post_type
+            #error_log( '##### action:wp_ajax_nopriv_' . Search_Types_Custom_Fields_Widget::GET_FORM_FOR_POST_TYPE
             #    . ':$sql=' . $sql );
-            #error_log( '##### action:wp_ajax_nopriv_' . Search_Types_Custom_Fields_Widget::$get_form_for_post_type
+            #error_log( '##### action:wp_ajax_nopriv_' . Search_Types_Custom_Fields_Widget::GET_FORM_FOR_POST_TYPE
             #    . ':$results=' . print_r( $results, TRUE ) );
             if ( $results ) {
                 $fields['belongs-child_of'] = array( 'type' => 'child_of', 'label' => 'Child Of',
@@ -448,9 +473,9 @@ EOD;
                         AND m.meta_key LIKE "_wpcf_belongs_%" and pv.post_type = "$_REQUEST[post_type]"
 EOD;
             $results = $wpdb->get_col( $sql );
-            #error_log( '##### action:wp_ajax_nopriv_' . Search_Types_Custom_Fields_Widget::$get_form_for_post_type
+            #error_log( '##### action:wp_ajax_nopriv_' . Search_Types_Custom_Fields_Widget::GET_FORM_FOR_POST_TYPE
             #    . ':$sql=' . $sql );
-            #error_log( '##### action:wp_ajax_nopriv_' . Search_Types_Custom_Fields_Widget::$get_form_for_post_type
+            #error_log( '##### action:wp_ajax_nopriv_' . Search_Types_Custom_Fields_Widget::GET_FORM_FOR_POST_TYPE
             #    . ':$results=' . print_r( $results, TRUE ) );
             if ( $results ) {
                 $fields['belongs-parent_of'] = array( 'type' => 'parent_of', 'label' => 'Parent Of',
@@ -463,13 +488,13 @@ EOD;
         if ( in_array( 'pst-std-attachment', $selected ) ) {
             $fields['pst-std-attachment']   = array( 'type' => 'attachment', 'label' => 'Attachment'   );
         }
-        #error_log( 'action:wp_ajax_nopriv_' . Search_Types_Custom_Fields_Widget::$get_form_for_post_type . ':$fields='
+        #error_log( 'action:wp_ajax_nopriv_' . Search_Types_Custom_Fields_Widget::GET_FORM_FOR_POST_TYPE . ':$fields='
         #    . print_r( $fields, TRUE ) );
         $posts = NULL;
         foreach ( $fields as $meta_key => $field ) {
-            #error_log( 'action:wp_ajax_nopriv_' . Search_Types_Custom_Fields_Widget::$get_form_for_post_type . ':$meta_key='
+            #error_log( 'action:wp_ajax_nopriv_' . Search_Types_Custom_Fields_Widget::GET_FORM_FOR_POST_TYPE . ':$meta_key='
             #    . $meta_key );
-            #error_log( 'action:wp_ajax_nopriv_' . Search_Types_Custom_Fields_Widget::$get_form_for_post_type . ':$field='
+            #error_log( 'action:wp_ajax_nopriv_' . Search_Types_Custom_Fields_Widget::GET_FORM_FOR_POST_TYPE . ':$field='
             #    . print_r( $field, TRUE ) );
             $wpcf_field =& $wpcf_fields[substr( $meta_key, 5 )];
 ?>
@@ -492,6 +517,7 @@ EOD;
                 $results = $wpdb->get_results( <<<EOD
                     SELECT a.ID, a.post_title FROM $wpdb->posts a, $wpdb->posts p
                         WHERE a.post_parent = p.ID AND a.post_type = "attachment" AND p.post_type = "$_REQUEST[post_type]"
+                            AND p.post_status = "publish"
                         LIMIT $SQL_LIMIT
 EOD
                     , OBJECT );
@@ -507,13 +533,13 @@ EOD
 <?php
                 continue;
             }   # if ( $meta_key === 'pst-std-attachment' ) {
-            #error_log( '##### wp_ajax_nopriv_' . Search_Types_Custom_Fields_Widget::$get_form_for_post_type
+            #error_log( '##### wp_ajax_nopriv_' . Search_Types_Custom_Fields_Widget::GET_FORM_FOR_POST_TYPE
             #    . ':$field[values]=' . print_r( $field['values'], TRUE ) );
             # now output the checkboxes
             $number = -1;
             foreach ( $field['values'] as $value => $count ) {
                 if ( ++$number == $SQL_LIMIT ) { break; }
-                #error_log( '##### wp_ajax_nopriv_' . Search_Types_Custom_Fields_Widget::$get_form_for_post_type
+                #error_log( '##### wp_ajax_nopriv_' . Search_Types_Custom_Fields_Widget::GET_FORM_FOR_POST_TYPE
                 #    . ':$value=' . $value . ',   $count=' . $count );
                 if ( $field['type'] == 'child_of' || $field['type'] == 'parent_of' ) {
                     # for child of and parent of use post title instead of post id for label
@@ -597,17 +623,17 @@ jQuery("button.scpbcfw-display-button").click(function(event){
 </script>
 <?php
         die();
-    } );   # add_action( 'wp_ajax_nopriv_' . Search_Types_Custom_Fields_Widget::$get_form_for_post_type, function() {
-   
+    } );   # add_action( 'wp_ajax_nopriv_' . Search_Types_Custom_Fields_Widget::GET_FORM_FOR_POST_TYPE, function() {   
 } else {
     add_action( 'wp_enqueue_scripts', function() {
         wp_enqueue_script( 'jquery' );
     } );
 	add_filter( 'posts_where', function( $where, $query ) {
         global $wpdb;
-        if ( !$query->is_main_query() || !array_key_exists( 'magic_fields_search_form', $_REQUEST ) ) { return $where; }
+        if ( !$query->is_main_query() || !array_key_exists( 'search_types_custom_fields_form', $_REQUEST ) ) { return $where; }
         # this is a Types search request so modify the SQL where clause
         #error_log( '##### posts_where:$_REQUEST=' . print_r( $_REQUEST, TRUE ) );
+        $and_or = $_REQUEST['search_types_custom_fields_and_or'] == 'and' ? 'AND' : 'OR';
         # first get taxonomy name to term_taxonomy_id transalation table in case we need the translations
         $results = $wpdb->get_results( <<<EOD
             SELECT x.taxonomy, t.name, x.term_taxonomy_id
@@ -648,13 +674,12 @@ EOD
         #error_log( '##### filter:posts_where:$_REQUEST=' . print_r( $_REQUEST, TRUE ) );
         $wpcf_fields = get_option( 'wpcf-fields', array() );    
         #error_log( 'posts_where:$where=' . $where );
+        $non_field_keys = array( 'search_types_custom_fields_form', 'search_types_custom_fields_widget_option',
+            'search_types_custom_fields_widget_number', 'search_types_custom_fields_and_or', 'post_type' );
         $sql = '';
         foreach ( $_REQUEST as $key => $values ) {
             # here only searches on the table $wpdb->postmeta are processed; everything is done later.
-            if ( $key === 'magic_fields_search_form' || $key === 'magic_fields_search_widget_option'
-                || $key === 'magic_fields_search_widget_number' || $key === 'post_type' ) {
-                continue;
-            }
+            if ( in_array( $key, $non_field_keys ) ) { continue; }
             $prefix = substr( $key, 0, 8 );
             if ( $prefix === 'tax-cat-' || $prefix === 'tax-tag-' || $prefix === 'pst-std-' ) {
                 continue;
@@ -667,7 +692,6 @@ EOD
             }
             $values = array_filter( $values ); 
             if ( !$values ) { continue; }
-            $sql .= ' AND EXISTS ( SELECT * FROM ' . $wpdb->postmeta . ' w WHERE ';
             $sql2 = '';
             foreach ( $values as $value ) {
                 if ( $sql2 ) { $sql2 .= ' OR '; }
@@ -716,22 +740,21 @@ EOD
             } else {
                 $sql2 = "( $sql2 ) AND w.post_id = p.ID";
             }
-            $sql .= "$sql2 )";
-        }
+            if ( $sql ) { $sql .= " $and_or "; }
+            $sql .= " EXISTS ( SELECT * FROM $wpdb->postmeta w WHERE $sql2 ) ";
+        }   # foreach ( $_REQUEST as $key => $values ) {
         if ( $sql ) {
-            $sql = "SELECT p.ID FROM $wpdb->posts p WHERE p.post_type = '$_REQUEST[post_type]'" . $sql;
+            $sql = "SELECT p.ID FROM $wpdb->posts p WHERE p.post_type = '$_REQUEST[post_type]' AND ( $sql )";
             #error_log( '##### posts_where:meta $sql=' . $sql );
             $ids0 = $wpdb->get_col( $sql );
+            if ( $and_or == 'AND' && !$ids0 ) { return ' AND 1 = 2 '; }
         } else {
-            $ids0 = NULL;
+            $ids0 = FALSE;
         }
         $sql = '';
         foreach ( $_REQUEST as $key => $values ) {
             # here only taxonomies are processed
-            if ( $key === 'magic_fields_search_form' || $key === 'magic_fields_search_widget_option'
-                || $key === 'magic_fields_search_widget_number' || $key === 'post_type' ) {
-                continue;
-            }
+            if ( in_array( $key, $non_field_keys ) ) { continue; }
             $prefix = substr( $key, 0, 8 );
             if ( $prefix !== 'tax-cat-' && $prefix !== 'tax-tag-' ) {
                 continue;
@@ -743,44 +766,53 @@ EOD
             $values = array_filter( $values ); 
             if ( !$values ) { continue; }
             $taxonomy = substr( $key, 8 );
-            $sql .= ' AND EXISTS ( SELECT * FROM ' . $wpdb->term_relationships . ' WHERE (';
+            if ( $sql ) { $sql .= " $and_or "; }
+            $sql .= " EXISTS ( SELECT * FROM $wpdb->term_relationships WHERE ( ";
             foreach ( $values as $value ) {
                 if ( $value !== $values[0] ) { $sql .= ' OR '; }
                 $sql .= 'term_taxonomy_id = ' . $value; 
             }
             $sql .= ') AND object_id = p.ID )';
-        }
+        }   # foreach ( $_REQUEST as $key => $values ) {
         if ( $sql ) {
-            $sql = "SELECT ID FROM $wpdb->posts p WHERE p.post_type = '$_REQUEST[post_type]' " . $sql;
+            $sql = "SELECT ID FROM $wpdb->posts p WHERE p.post_type = '$_REQUEST[post_type]' AND ( $sql ) ";
             #error_log( '##### posts_where:tax $sql=' . $sql );
             $ids1 = $wpdb->get_col( $sql );
-        } else {
-            $ids1 = NULL;
+            if ( $and_or == 'AND' && !$ids1 ) { return ' AND 1 = 2 '; }
+       } else {
+            $ids1 = FALSE;
         }
-        if ( $ids0 !== NULL && $ids1 !== NULL ) { $ids = array_intersect( $ids0, $ids1 ); }
-        else if ( $ids0 !== NULL ) { $ids = $ids0; }
-        else if ( $ids1 !== NULL ) { $ids = $ids1; }
-        else { $ids = NULL; }
+        $ids = Search_Types_Custom_Fields_Widget::join_arrays( $and_or, $ids0, $ids1 );
+        if ( $and_or == 'AND' && $ids !== FALSE && !$ids ) { return ' AND 1 = 2 '; }
         if ( array_key_exists( 'pst-std-attachment', $_REQUEST ) && $_REQUEST['pst-std-attachment'] ) {
             $sql = "SELECT post_parent FROM $wpdb->posts WHERE ID IN ( " . implode( ',', $_REQUEST['pst-std-attachment'] ) . " )";
             $ids2 = $wpdb->get_col( $sql );
-            if ( $ids !== NULL ) { $ids = array_intersect( $ids, $ids2 ); }
-            else { $ids = $ids2; }
-        }
-        if ( $ids !== NULL ) {
-            $ids = implode( ', ', $ids );
-            $where = " AND post_status = 'publish' AND ID IN ( $ids )";
+            if ( $and_or == 'AND' && !$ids2 ) { return ' AND 1 = 2 '; }
         } else {
-            $where = " AND post_status = 'publish' AND post_type = '$_REQUEST[post_type]'";
+            $ids2 = FALSE;
         }
+        $ids = Search_Types_Custom_Fields_Widget::join_arrays( $and_or, $ids, $ids2 );
+        if ( $and_or == 'AND' && $ids !== FALSE && !$ids ) { return ' AND 1 = 2 '; }
         # finally handle post_content - post_title and post_excerpt are included in the search of post_content
-        #error_log( '##### filter:posts_where:$_REQUEST=' . print_r( $_REQUEST, TRUE) );
         if ( array_key_exists( 'pst-std-post_content', $_REQUEST ) && $_REQUEST['pst-std-post_content'] ) {
-            $where .= <<<EOD
-                AND ( post_content  LIKE "%{$_REQUEST['pst-std-post_content']}%"
-                    OR post_title   LIKE "%{$_REQUEST['pst-std-post_content']}%"
-                    OR post_excerpt LIKE "%{$_REQUEST['pst-std-post_content']}%" )
+            $sql = <<<EOD
+                SELECT ID FROM $wpdb->posts WHERE post_type = "$_REQUEST[post_type]" AND post_status = "publish"
+                    AND ( post_content  LIKE "%{$_REQUEST['pst-std-post_content']}%"
+                        OR post_title   LIKE "%{$_REQUEST['pst-std-post_content']}%"
+                        OR post_excerpt LIKE "%{$_REQUEST['pst-std-post_content']}%" )
 EOD;
+            $ids3 = $wpdb->get_col( $sql );
+            if ( $and_or == 'AND' && !$ids3 ) { return ' AND 1 = 2 '; }
+        } else {
+            $ids3 = FALSE;
+        }
+        $ids = Search_Types_Custom_Fields_Widget::join_arrays( $and_or, $ids, $ids3 );
+        if ( $and_or == 'AND' && $ids !== FALSE && !$ids ) { return ' AND 1 = 2 '; }
+        if ( $ids ) {
+            $ids = implode( ', ', $ids );
+            $where = " AND ID IN ( $ids ) ";
+        } else {
+            $where = " AND post_type = '$_REQUEST[post_type]' AND post_status = 'publish' ";
         }
         #error_log( '##### posts_where:$where=' . $where );
         return $where;
