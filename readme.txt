@@ -3,7 +3,7 @@ Contributors: Magenta Cuda
 Tags: search, custom fields
 Requires at least: 3.6
 Tested up to: 3.7.1
-Stable tag: 0.4.2
+Stable tag: 0.4.3
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -30,12 +30,20 @@ http://alttypes.wordpress.com/search-types-custom-fields-widget/
 3. The User's Interface for Searching Posts of the Selected Type.
 
 == Changelog ==
+= 0.4.3 =
+* separated child of/parent of categories by post type
+* made items shown per custom field user settable
+* fixed to handle corrupt obsolete data without crashing
+* fixed incorrect counts due to double counting and counting blank and null values
+* tweaked the display of checkboxes, select and radio custom fields
 = 0.4.2 =
-add support for selecting and/or on search conditions
+* add support for selecting and/or on search conditions
 = 0.4.1.1 =
 * Initial release.
 
 == Upgrade Notice ==
+= 0.4.3 =
+* some enhancements and bug fixes
 = 0.4.2 =
 add support for selecting and/or on search conditions
 = 0.4.1.1 =

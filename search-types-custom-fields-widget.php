@@ -4,7 +4,7 @@
 Plugin Name: Search Types Custom Fields Widget
 Plugin URI: http://alttypes.wordpress.com/
 Description: Widget for searching Types custom fields and custom taxonomies.
-Version: 0.4.2
+Version: 0.4.3
 Author: Magenta Cuda
 Author URI: http://magentacuda.wordpress.com
 License: GPL2
@@ -32,13 +32,14 @@ class Search_Types_Custom_Fields_Widget extends WP_Widget {
     
     # start of user configurable constants
     const DATE_FORMAT = DATE_RSS;                                      # how to display date/time values
-    const SQL_LIMIT = 16;                                              # maximum number of items to display
+    const SQL_LIMIT = 16;                                              # maximum number of post types/custom fields to display
     #const SQL_LIMIT = 2;                                              # TODO: this limit for testing only replace with above
     # end of user configurable constants
     
     const OPTIONAL_TEXT_VALUE_SUFFIX = '-stcfw-optional-text-value';   # suffix to append to optional text input for a search field
     const GET_FORM_FOR_POST_TYPE = 'get_form_for_post_type';
-
+    const PARENT_OF = 'For ';                                          # label for parent of relationship
+    CONST CHILD_OF = 'Of ';                                            # label for child of relationship
 	public function __construct() {
 		parent::__construct(
             'search_types_custom_fields_widget',
@@ -90,11 +91,19 @@ EOD
 </select>
 </div>
 <div id="search-types-custom-fields-parameters"></div>
-Results should satisfy 
+<div id="search-types-custom-fields-submit-box" style="display:none">
+<div style="border:2px solid black;padding:5px;margin:5px;border-radius:7px;text-align:center;">
+Results should satisfy<br> 
 <input type="radio" name="search_types_custom_fields_and_or" value="and" checked><strong>All</strong>
-<input type="radio" name="search_types_custom_fields_and_or" value="or"><strong>Any</strong>
-of the selected search conditions.
-<input id="search-types-custom-fields-submit" type="submit" value="Search" disabled>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+<input type="radio" name="search_types_custom_fields_and_or" value="or"><strong>Any</strong></br>
+of the search conditions.
+</div>
+<div style="text-align:right;">
+<input id="search-types-custom-fields-submit" type="submit" value="Start Search" style="color:black;border:2px solid black;" disabled>
+&nbsp;&nbsp;
+</div>
+</div>
 </form>
 <script>
 jQuery("form#search-types-custom-fields-widget-<?php echo $this->number; ?> select#post_type").change(function(){
@@ -122,6 +131,8 @@ jQuery("form#search-types-custom-fields-widget-<?php echo $this->number; ?> sele
                 +" div#search-types-custom-fields-parameters").html(response);
             jQuery("form#search-types-custom-fields-widget-<?php echo $this->number; ?>"
                 +" input#search-types-custom-fields-submit").prop("disabled",false);
+            jQuery("form#search-types-custom-fields-widget-<?php echo $this->number; ?>"
+                +" div#search-types-custom-fields-submit-box").css("display","block");
         }
     );
 });
@@ -135,7 +146,9 @@ jQuery("form#search-types-custom-fields-widget-<?php echo $this->number; ?> sele
         #error_log( '##### Search_Types_Custom_Fields_Widget::update():$_POST=' . print_r( $_POST, TRUE ) );    
         #error_log( '##### Search_Types_Custom_Fields_Widget::update():$old=' . print_r( $old, TRUE ) );
         #error_log( '##### Search_Types_Custom_Fields_Widget::update():$new=' . print_r( $new, TRUE ) );
-        return array_map( function( $values ) { return array_map( strip_tags, $values ); }, $new );
+        return array_map( function( $values ) {
+            return is_array( $values) ? array_map( strip_tags, $values ) : strip_tags( $values );
+        }, $new );
     }
     
     # form() is for the administrator to specify the post types and custom fields that will be searched
@@ -146,7 +159,8 @@ jQuery("form#search-types-custom-fields-widget-<?php echo $this->number; ?> sele
         #error_log( '##### Search_Types_Custom_Fields_Widget::form():$instance=' . print_r( $instance, TRUE ) );
         $wpcf_types  = get_option( 'wpcf-custom-types', array() );
         $wpcf_fields = get_option( 'wpcf-fields',       array() );
-        #error_log( '##### Search_Types_Custom_Fields_Widget::form():$wpcf_types=' . print_r( $wpcf_types, TRUE ) );
+        #error_log( '##### Search_Types_Custom_Fields_Widget::form():$wpcf_types='  . print_r( $wpcf_types, TRUE  ) );
+        #error_log( '##### Search_Types_Custom_Fields_Widget::form():$wpcf_fields=' . print_r( $wpcf_fields, TRUE ) );
 ?>
 <h4>Select Search Fields for:</h4>
 <?php
@@ -208,16 +222,32 @@ EOD;
             }
             
             # now do custom fields and post content
+            # again the sql is complicated since a single post may have multiple values for a custom field
             $sql = <<<EOD
-                SELECT m.meta_key, COUNT(*) count FROM $wpdb->postmeta m, $wpdb->posts p
-                WHERE m.post_id = p.ID AND p.post_type = "$name" AND m.meta_key LIKE 'wpcf-%'
-                GROUP BY m.meta_key ORDER BY count DESC LIMIT $SQL_LIMIT
+                SELECT field_name, COUNT(*) count
+                    FROM ( SELECT m.meta_key field_name, m.post_id FROM $wpdb->postmeta m, $wpdb->posts p
+                        WHERE m.post_id = p.ID AND p.post_type = "$name" AND m.meta_key LIKE 'wpcf-%'
+                            AND m.meta_value IS NOT NULL AND m.meta_value != '' AND m.meta_value != 'a:0:{}'
+                        GROUP BY m.meta_key, m.post_id ) fields
+                    GROUP BY field_name ORDER BY count DESC LIMIT $SQL_LIMIT
 EOD;
             #error_log( '##### Search_Types_Custom_Fields_Widget::form():$sql=' . $sql );
             $fields = $wpdb->get_results( $sql, OBJECT_K );
+            $sql = <<<EOD
+                SELECT gf.meta_value FROM $wpdb->postmeta pt, $wpdb->postmeta gf WHERE pt.post_id = gf.post_id
+                    AND pt.meta_key = "_wp_types_group_post_types" AND pt.meta_value LIKE "%,$name,%"
+                    AND gf.meta_key = "_wp_types_group_fields"
+EOD;
+            #error_log( '##### Search_Types_Custom_Fields_Widget::form():$sql=' . $sql );
+            $fields_for_type = $wpdb->get_col( $sql );
+            #error_log( '##### Search_Types_Custom_Fields_Widget::form():$fields_for_type=' . print_r ($fields_for_type, TRUE ) );            
+            $fields_for_type = array_reduce( $fields_for_type, function( $result, $item ) {
+                return array_merge( $result, explode( ',', trim( $item, ',' ) ) );
+            }, array() );
+            #error_log( '##### Search_Types_Custom_Fields_Widget::form():$fields_for_type=' . print_r ($fields_for_type, TRUE ) );            
             foreach ( $fields as $meta_key => &$field ) {
                 $field_name = substr( $meta_key, 5 );
-                if ( array_key_exists( $field_name, $wpcf_fields ) ) {
+                if ( array_key_exists( $field_name, $wpcf_fields ) && in_array( $field_name, $fields_for_type ) ) {
                     $field->label = $wpcf_fields[$field_name]['name'];
                 } else {
                     $field = NULL;   # not a valid Types custom field so tag it for skipping.
@@ -226,20 +256,37 @@ EOD;
             unset( $field );
             #error_log( '##### Search_Types_Custom_Fields_Widget::form():$fields=' . print_r( $fields, TRUE ) );
             # add fields for parent of, child of, post_content and attachment
-            # TODO: collapsing all parent post types together may not be the best idea - consider splitting
             $sql = <<<EOD
-                SELECT COUNT( DISTINCT m.post_id ) FROM $wpdb->postmeta m, $wpdb->posts p
-                WHERE m.post_id = p.ID AND p.post_type = "$name" AND m.meta_key LIKE '_wpcf_belongs_%'
+                SELECT m.meta_key, COUNT( DISTINCT m.post_id ) count FROM $wpdb->postmeta m, $wpdb->posts p
+                    WHERE m.post_id = p.ID AND p.post_type = "$name" AND m.meta_key LIKE '_wpcf_belongs_%'
+                    GROUP BY m.meta_key
 EOD;
             #error_log( '##### Search_Types_Custom_Fields_Widget::form():$sql=' . $sql );
-            $fields['belongs-child_of']     = (object) array( 'label' => 'Child Of', 'count' => $wpdb->get_var( $sql ) );
-            # TODO: collapsing all child post types together may not be the best idea - consider splitting
+            $results = $wpdb->get_results( $sql, OBJECT );
+            foreach ( $results as $result ) {
+                $fields[$result->meta_key] = (object) array(
+                    'label' => self::CHILD_OF
+                        . $wpcf_types[substr( $result->meta_key, 14, strlen( $result->meta_key ) - 17 )]['labels']['name'], 
+                    'count' => $result->count
+                );
+            }
+            unset( $results, $result );
             $sql = <<<EOD
-                SELECT COUNT( DISTINCT m.meta_value ) FROM $wpdb->postmeta m, $wpdb->posts p
-                WHERE m.meta_value = p.ID AND p.post_type = "$name" AND m.meta_key LIKE '_wpcf_belongs_%'
+                SELECT pi.post_type, m.meta_key, COUNT( DISTINCT m.meta_value ) count
+                    FROM $wpdb->postmeta m, $wpdb->posts pv, $wpdb->posts pi
+                    WHERE m.meta_value = pv.ID AND pv.post_type = "$name" AND m.post_id = pi.ID
+                        AND m.meta_key LIKE '_wpcf_belongs_%'
+                    GROUP BY pi.post_type
 EOD;
             #error_log( '##### Search_Types_Custom_Fields_Widget::form():$sql=' . $sql );
-            $fields['belongs-parent_of']    = (object) array( 'label' => 'Parent Of', 'count' => $wpdb->get_var( $sql ) );
+            $results = $wpdb->get_results( $sql, OBJECT );
+            #error_log( '##### Search_Types_Custom_Fields_Widget::form():$results=' . print_r( $results, TRUE ) );
+            foreach ( $results as $result ) {
+                $fields["inverse_{$result->post_type}_{$result->meta_key}"] = (object) array(
+                    'label' => self::PARENT_OF . $wpcf_types[$result->post_type]['labels']['name'], 
+                    'count' => $result->count
+                );
+            }
             $fields['pst-std-post_content'] = (object) array( 'label' => 'Post Content', 'count' => $type->count );
             $sql = <<<EOD
                 SELECT COUNT( DISTINCT a.post_parent ) FROM $wpdb->posts a, $wpdb->posts p
@@ -248,9 +295,10 @@ EOD;
             #error_log( '##### Search_Types_Custom_Fields_Widget::form():$sql=' . $sql );
             $fields['pst-std-attachment']   = (object) array( 'label' => 'Attachment', 'count' => $wpdb->get_var( $sql ) );
             #error_log( '##### Search_Types_Custom_Fields_Widget::form():$fields=' . print_r( $fields, TRUE ) );
+            # remove all invalid custom fields.
+            $fields = array_filter( $fields );
             # now display all fields with checkboxes
             foreach ( $fields as $meta_key => $field ) {
-                if ( $field === NULL ) { continue; }   # This item was not a valid Types custom field so skip it.
                 #error_log( '##### Search_Types_Custom_Fields_Widget::form():$meta_key=' . $meta_key );
                 #error_log( '##### Search_Types_Custom_Fields_Widget::form():$field='    . print_r( $field, TRUE ) );
 ?>
@@ -268,6 +316,15 @@ EOD;
 <?php
         }
 ?>
+<div style="border:1px solid gray;padding:5px;margin:5px;border-radius:7px;">
+Maximum number of items to display per custom field:
+<input type="number" min="4" max="1024" 
+    id="<?php echo $this->get_field_id( 'maximum_number_of_items' ); ?>"
+    name="<?php echo $this->get_field_name( 'maximum_number_of_items' ); ?>"
+    value="<?php echo !empty( $instance['maximum_number_of_items'] ) ? $instance['maximum_number_of_items'] : 16; ?>"
+    style="float:right;text-align:right;">
+<div style="clear:both;"></div>
+</div>
 <script type="text/javascript">
 jQuery("button.scpbcfw-display-button").click(function(event){
     if(jQuery(this).text()=="Open"){
@@ -287,7 +344,7 @@ jQuery("button.scpbcfw-display-button").click(function(event){
     
     public static function search_wpcf_field_options( &$options, $option, $value ) {
         foreach ( $options as $k => $v ) {
-            if ( $v[$option] == $value ) { return $k; }
+            if ( !empty( $v[$option]) && $v[$option] == $value ) { return $k; }
         }
         return NULL;
     }
@@ -328,9 +385,10 @@ if ( is_admin() ) {
     add_action( 'wp_ajax_nopriv_' . Search_Types_Custom_Fields_Widget::GET_FORM_FOR_POST_TYPE, function() {
         # build the search form for the post type in the AJAX request
         global $wpdb;
-        $SQL_LIMIT = Search_Types_Custom_Fields_Widget::SQL_LIMIT;
+        $wpcf_types  = get_option( 'wpcf-custom-types', array() );
+        #error_log( '##### Search_Types_Custom_Fields_Widget::form():$wpcf_types=' . print_r( $wpcf_types, TRUE ) );
 ?>
-<h4>Please specify search criteria:<h4>
+<h4>Please specify search conditions:<h4>
 <?php
         #error_log( '##### action:wp_ajax_nopriv_' . Search_Types_Custom_Fields_Widget::GET_FORM_FOR_POST_TYPE
         #    . ':$_REQUEST=' . print_r( $_REQUEST, TRUE ) );
@@ -339,6 +397,7 @@ if ( is_admin() ) {
         #    . ':$option=' . print_r( $option, TRUE ) );
         $widget_number = $_REQUEST['search_types_custom_fields_widget_number'];
         $selected = $option[$widget_number][$_REQUEST['post_type']];
+        $SQL_LIMIT = $option[$widget_number]['maximum_number_of_items'];
         #error_log( '##### wp_ajax_nopriv_' . Search_Types_Custom_Fields_Widget::GET_FORM_FOR_POST_TYPE
         #    . ':$selected=' . print_r( $selected, TRUE ) );
         # get all terms for all taxonomies for the selected post type
@@ -396,92 +455,148 @@ EOD;
         }   # foreach ( $terms as $tax_name => &$values ) {
         unset( $values );
         # get all meta_values for the selected custom fields in the selected post type
-        $selected_imploded = '( "' . implode( '", "', $selected ) . '" )';
-        $sql = <<<EOD
-            SELECT m.meta_key, m.meta_value, COUNT(*) count
-                FROM $wpdb->postmeta m, $wpdb->posts p
-                WHERE m.post_id = p.ID
-                    AND meta_key IN $selected_imploded AND p.post_type = "$_REQUEST[post_type]"
-                GROUP BY m.meta_key, m.meta_value
+        if ( $selected_imploded = array_filter( $selected, function( $v ) { return strpos( $v, '_wpcf_belongs_' ) !== 0; } ) ) {
+            $selected_imploded = '("' . implode( '","', $selected_imploded ) . '")';
+            $sql = <<<EOD
+                SELECT m.meta_key, m.meta_value, COUNT(*) count
+                    FROM $wpdb->postmeta m, $wpdb->posts p
+                    WHERE m.post_id = p.ID
+                        AND meta_key IN $selected_imploded AND p.post_type = "$_REQUEST[post_type]"
+                    GROUP BY m.meta_key, m.meta_value
 EOD;
-        #error_log( '##### action:wp_ajax_nopriv_' . Search_Types_Custom_Fields_Widget::GET_FORM_FOR_POST_TYPE
-        #    . ':$sql=' . $sql );
-        $results = $wpdb->get_results( $sql, OBJECT );
-        #error_log( '##### action:wp_ajax_nopriv_' . Search_Types_Custom_Fields_Widget::GET_FORM_FOR_POST_TYPE
-        #    . ':$results=' . print_r( $results, TRUE ) );
-        $wpcf_fields = get_option( 'wpcf-fields', array() );
-        # prepare the results for use in checkboxes - need value, count of value and field labels
-        foreach ( $results as $result ) {
-            if ( !$result->meta_value ) { continue; }
-            $wpcf_field =& $wpcf_fields[substr( $result->meta_key, 5 )];
-            if ( is_serialized( $result->meta_value ) ) {
-                # serialized meta_value contains multiple values so need to unpack them and process them individually
-                $unserialized = unserialize( $result->meta_value );
-                 if ( is_array( $unserialized ) ) {
-                    if ( array_reduce( $unserialized, function( $sum, $value ) {
-                        return $sum = $sum && is_scalar( $value );
-                    }, TRUE ) ) {
-                        foreach( $unserialized as $key => $value ) {
-                            if ( $wpcf_field['type'] == 'checkboxes' ) {
-                                # for checkboxes use the unique option key as the value of the checkbox
-                                if ( $value ) { $fields[$result->meta_key]['values'][$key] += $result->count; }
-                            } else {
-                                $fields[$result->meta_key]['values'][$value] += $result->count;
+            #error_log( '##### action:wp_ajax_nopriv_' . Search_Types_Custom_Fields_Widget::GET_FORM_FOR_POST_TYPE
+            #    . ':$sql=' . $sql );
+            $results = $wpdb->get_results( $sql, OBJECT );
+            #error_log( '##### action:wp_ajax_nopriv_' . Search_Types_Custom_Fields_Widget::GET_FORM_FOR_POST_TYPE
+            #    . ':$results=' . print_r( $results, TRUE ) );
+            $wpcf_fields = get_option( 'wpcf-fields', array() );
+            # prepare the results for use in checkboxes - need value, count of value and field labels
+            foreach ( $results as $result ) {
+                $wpcf_field =& $wpcf_fields[substr( $result->meta_key, 5 )];
+                # skip false values except for single checkbox
+                if ( $wpcf_field['type'] != 'checkbox' && !$result->meta_value ) { continue; }
+                if ( is_serialized( $result->meta_value ) ) {
+                    # serialized meta_value contains multiple values so need to unpack them and process them individually
+                    $unserialized = unserialize( $result->meta_value );
+                     if ( is_array( $unserialized ) ) {
+                        if ( array_reduce( $unserialized, function( $sum, $value ) {
+                            return $sum = $sum && is_scalar( $value );
+                        }, TRUE ) ) {
+                            foreach( $unserialized as $key => $value ) {
+                                if ( $wpcf_field['type'] == 'checkboxes' ) {
+                                    # for checkboxes use the unique option key as the value of the checkbox
+                                    if ( $value ) { $fields[$result->meta_key]['values'][$key] += $result->count; }
+                                } else {
+                                    $fields[$result->meta_key]['values'][$value] += $result->count;
+                                }
                             }
+                        } else {
+                            continue;
                         }
+                    }
+                } else {
+                    if ( $wpcf_field['type'] == 'radio' || $wpcf_field['type'] == 'select' ) {
+                        # for radio and select use the unique option key as the value of the radio or select
+                        $key = Search_Types_Custom_Fields_Widget::search_wpcf_field_options( $wpcf_field['data']['options'], 'value',
+                            $result->meta_value );
+                        if ( !$key ) { continue; }
+                        $fields[$result->meta_key]['values'][$key] += $result->count;
                     } else {
-                        continue;
+                        $fields[$result->meta_key]['values'][$result->meta_value] = $result->count;
                     }
                 }
-            } else {
-                if ( $wpcf_field['type'] == 'radio' || $wpcf_field['type'] == 'select' ) {
-                    # for radio and select use the unique option key as the value of the radio or select
-                    $key = Search_Types_Custom_Fields_Widget::search_wpcf_field_options( $wpcf_field['data']['options'], 'value',
-                        $result->meta_value );
-                    if ( !$key ) { continue; }
-                    $fields[$result->meta_key]['values'][$key] += $result->count;
-                } else {
-                    $fields[$result->meta_key]['values'][$result->meta_value] = $result->count;
+                $fields[$result->meta_key]['type']  = $wpcf_field['type'];
+                $fields[$result->meta_key]['label'] = $wpcf_field['name'];
+            }   # foreach ( $results as $result ) {
+            unset( $selected_imploded );
+        }   # if ( $selected_imploded = array_filter( $selected, function( $v ) { return strpos( $v, '_wpcf_belongs_' ) !== 0; } ) ) {
+        # get childs of selected parents
+        if ( $selected_child_of = array_filter( $selected, function( $v ) { return strpos( $v, '_wpcf_belongs_' ) === 0; } ) ) {
+            $selected_imploded = '("' . implode( '","', $selected_child_of ) . '")';
+            # do all parent types with one sql query and filter the results later
+            $sql = <<<EOD
+                SELECT m.meta_key, m.meta_value, COUNT(*) count
+                    FROM $wpdb->postmeta m, $wpdb->posts pi, $wpdb->posts pv
+                    WHERE m.post_id = pi.ID AND m.meta_value = pv.ID
+                        AND m.meta_key IN $selected_imploded AND pi.post_type = "$_REQUEST[post_type]"
+                        GROUP BY m.meta_key, m.meta_value
+EOD;
+            #error_log( '##### action:wp_ajax_nopriv_' . Search_Types_Custom_Fields_Widget::GET_FORM_FOR_POST_TYPE
+            #    . ':$sql=' . $sql );
+            $results = $wpdb->get_results( $sql );
+            #error_log( '##### action:wp_ajax_nopriv_' . Search_Types_Custom_Fields_Widget::GET_FORM_FOR_POST_TYPE
+            #    . ':$results=' . print_r( $results, TRUE ) );
+            foreach ( $selected_child_of as $parent ) {
+                # do each parent type but results need to be filtered to this parent type
+                if ( $selected_results = array_filter( $results, function( $result ) use ( $parent ) { 
+                    return $result->meta_key == $parent; 
+                } ) ) {
+                    #error_log( '##### action:wp_ajax_nopriv_' . Search_Types_Custom_Fields_Widget::GET_FORM_FOR_POST_TYPE
+                    #    . ':$new_results=' . print_r( $new_results, TRUE ) );
+                    $fields[$parent] = array(
+                        'type' => 'child_of',
+                        'label' => Search_Types_Custom_Fields_Widget::CHILD_OF
+                            . $wpcf_types[substr( $parent, 14, strlen( $parent ) - 17 )]['labels']['name'], 
+                        'values' => array_reduce( $selected_results, function( $new_results, $result ) {
+                                #error_log( '##### array_reduce():function():$result=' . print_r( $result, TRUE ) );
+                                $new_results[$result->meta_value] = $result->count;
+                                return $new_results;
+                            }, array() )
+                    );
+                    #error_log( '##### action:wp_ajax_nopriv_' . Search_Types_Custom_Fields_Widget::GET_FORM_FOR_POST_TYPE
+                    #    . ':$fields[$parent]=' . print_r( $fields[$parent], TRUE ) );
                 }
             }
-            $fields[$result->meta_key]['type']  = $wpcf_field['type'];
-            $fields[$result->meta_key]['label'] = $wpcf_field['name'];
-        }   # foreach ( $results as $result ) {
-        if ( in_array( 'belongs-child_of', $selected ) ) {
+            unset( $selected_imploded );
+        }   # if ( $selected_child_of = array_filter( $selected, function( $v ) { return strpos( $v, '_wpcf_belongs_' ) === 0; } ) ) {
+        # get parents of selected childs
+        if ( $selected_parent_of = array_filter( $selected, function( $v ) { return strpos( $v, 'inverse_' ) === 0; } ) ) {
+            #error_log( '##### action:wp_ajax_nopriv_' . Search_Types_Custom_Fields_Widget::GET_FORM_FOR_POST_TYPE
+            #    . ':$selected_parent_of=' . print_r( $selected_parent_of, TRUE ) );
+            # get all the child post types
+            $post_types = array_map( function( $v ) { return substr( $v, 8, strpos( $v, '__wpcf_belongs_' ) - 8 ); },
+                $selected_parent_of );
+            #error_log( '##### action:wp_ajax_nopriv_' . Search_Types_Custom_Fields_Widget::GET_FORM_FOR_POST_TYPE
+            #    . ':$post_types=' . print_r( $post_types, TRUE ) );
+            # get the '_wpcf_belongs_' meta_key - they are all identical so just use the first one
+            $selected_parent_of = array_pop( $selected_parent_of );
+            #error_log( '##### action:wp_ajax_nopriv_' . Search_Types_Custom_Fields_Widget::GET_FORM_FOR_POST_TYPE
+            #    . ':$selected_parent_of=' . $selected_parent_of );
+            $selected_parent_of = substr( $selected_parent_of, strpos( $selected_parent_of, '_wpcf_belongs_' ) );
+            # we can use just one sql query to do all the post types together and filter the results later
             $sql = <<<EOD
-                SELECT m.meta_value, COUNT(*) count
+                SELECT pi.post_type, m.post_id, COUNT(*) count
                     FROM $wpdb->postmeta m, $wpdb->posts pi, $wpdb->posts pv
-                    WHERE m.post_id = pi.ID and m.meta_value = pv.ID
-                        AND m.meta_key LIKE "_wpcf_belongs_%" and pi.post_type = "$_REQUEST[post_type]"
-                        GROUP BY m.meta_value
+                    WHERE m.post_id = pi.ID AND m.meta_value = pv.ID
+                        AND m.meta_key = "$selected_parent_of" AND pv.post_type = "$_REQUEST[post_type]"
+                    GROUP BY pi.post_type, m.post_id
 EOD;
-            $results = $wpdb->get_resultS( $sql, OBJECT_K );
             #error_log( '##### action:wp_ajax_nopriv_' . Search_Types_Custom_Fields_Widget::GET_FORM_FOR_POST_TYPE
             #    . ':$sql=' . $sql );
+            $results = $wpdb->get_results( $sql );
             #error_log( '##### action:wp_ajax_nopriv_' . Search_Types_Custom_Fields_Widget::GET_FORM_FOR_POST_TYPE
             #    . ':$results=' . print_r( $results, TRUE ) );
-            if ( $results ) {
-                $fields['belongs-child_of'] = array( 'type' => 'child_of', 'label' => 'Child Of',
-                    'values' => array_map( function( $v ) { return $v->count; }, $results ) );
+            foreach ( $post_types as $post_type ) {
+                # do each post type but the results need to be filtered this post type
+                if ( $selected_results = array_filter( $results, function( $result ) use ( $post_type ) { 
+                    return $result->post_type == $post_type; 
+                } ) ) {
+                    #error_log( '##### action:wp_ajax_nopriv_' . Search_Types_Custom_Fields_Widget::GET_FORM_FOR_POST_TYPE
+                    #    . ':$new_results=' . print_r( $new_results, TRUE ) );
+                    $fields["inverse_{$post_type}_{$selected_parent_of}"] = array(
+                        'type' => 'parent_of',
+                        'label' => Search_Types_Custom_Fields_Widget::PARENT_OF . $wpcf_types[$post_type]['labels']['name'], 
+                        'values' => array_reduce( $selected_results, function( $new_results, $result ) {
+                                #error_log( '##### array_reduce():function():$result=' . print_r( $result, TRUE ) );
+                                $new_results[$result->post_id] = $result->count;
+                                return $new_results;
+                            }, array() )
+                    );
+                    #error_log( '##### action:wp_ajax_nopriv_' . Search_Types_Custom_Fields_Widget::GET_FORM_FOR_POST_TYPE
+                    #    . ':$fields[\'inverse\' . $child]=' . print_r( $fields['inverse' . $child], TRUE ) );
+                }
             }
-        }   # if ( in_array( 'belongs-child_of', $selected ) ) {
-        if ( in_array( 'belongs-parent_of', $selected ) ) {
-            $sql = <<<EOD
-                SELECT m.post_id
-                    FROM $wpdb->postmeta m, $wpdb->posts pi, $wpdb->posts pv
-                    WHERE m.post_id = pi.ID and m.meta_value = pv.ID
-                        AND m.meta_key LIKE "_wpcf_belongs_%" and pv.post_type = "$_REQUEST[post_type]"
-EOD;
-            $results = $wpdb->get_col( $sql );
-            #error_log( '##### action:wp_ajax_nopriv_' . Search_Types_Custom_Fields_Widget::GET_FORM_FOR_POST_TYPE
-            #    . ':$sql=' . $sql );
-            #error_log( '##### action:wp_ajax_nopriv_' . Search_Types_Custom_Fields_Widget::GET_FORM_FOR_POST_TYPE
-            #    . ':$results=' . print_r( $results, TRUE ) );
-            if ( $results ) {
-                $fields['belongs-parent_of'] = array( 'type' => 'parent_of', 'label' => 'Parent Of',
-                    'values' => array_fill_keys( $results, 1 ) );
-            }
-        }   # if ( in_array( 'belongs-parent_of', $selected ) ) {
+        }   # if ( $selected_parent_of = array_filter( $selected, function( $v ) { return strpos( $v, 'inverse_' ) === 0; } ) ) {
         if ( in_array( 'pst-std-post_content', $selected ) ) {
             $fields['pst-std-post_content'] = array( 'type' => 'textarea',   'label' => 'Post Content' );
         }
@@ -549,8 +664,10 @@ EOD
                     $label = $posts[$value]->post_title;
                 } else if ( $field['type'] == 'radio' ) {
                     # for radio replace option key with something more user friendly
-                    $label = $wpcf_field['data']['options'][$value]['value']
-                        . '(' . $wpcf_field['data']['options'][$value]['display_value'] .')';
+                    $label = $wpcf_field['data']['options'][$value]['title']
+                        . ( $wpcf_field['data']['display'] == 'value'
+                            ? ( '(' . $wpcf_field['data']['options'][$value]['display_value'] . ')' )
+                            : ( '(' . $wpcf_field['data']['options'][$value]['value'] . ')' ) );
                 } else if ( $field['type'] == 'select' ) {
                     # for select replace option key with something more user friendly
                     $label = $wpcf_field['data']['options'][$value]['value']
@@ -560,17 +677,22 @@ EOD
                     # Why? seems that the radio/select way would work here also and be simpler
                     $label = $wpcf_field['data']['options'][$value]['title'];
                      if ( $wpcf_field['data']['options'][$value]['display'] == 'db' ) {
-                        $label .= ' ' . $wpcf_field['data']['options'][$value]['set_value'];
-                    } else {
-                        $label .= ' ' . $wpcf_field['data']['options'][$value]['display_value_selected'];
+                        $label .= ' (' . $wpcf_field['data']['options'][$value]['set_value'] . ')';
+                    } else if ( $wpcf_field['data']['options'][$value]['display'] == 'value' ) {
+                        $label .= ' (' . $wpcf_field['data']['options'][$value]['display_value_selected'] . ')';
                     }
                } else if ( $field['type'] == 'checkbox' ) {
                     if ( $wpcf_field['data']['display'] == 'db' ) {
                         $label = $value;
                     } else {
-                        $label = $wpcf_field['data']['display_value_selected'];
+                        if ( $value ) {
+                            $label = $wpcf_field['data']['display_value_selected'];
+                        } else {
+                            $label = $wpcf_field['data']['display_value_not_selected'];
+                        }
                     }
-                } else if ( $field['type'] == 'image' || $field['type'] == 'file' ) {
+                } else if ( $field['type'] == 'image' || $field['type'] == 'file' || $field['type'] == 'audio'
+                    || $field['type'] == 'video' ) {
                     # use only filename for images and files
                     $label = ( $i = strrpos( $value, '/' ) ) !== FALSE ? substr( $value, $i + 1 ) : $value;
                 } else if ( $field['type'] == 'date' ) {
@@ -611,6 +733,8 @@ EOD
 ?>
 <script type="text/javascript">
 jQuery("button.scpbcfw-display-button").click(function(event){
+    console.log("button.scpbcfw-display-button.click()");
+    console.log(jQuery("div.scpbcfw-search-field-values",this.parentNode).html());
     if(jQuery(this).text()=="Open"){
         jQuery(this).text("Close");
         jQuery("div.scpbcfw-search-field-values",this.parentNode).css("display","block");
@@ -651,6 +775,8 @@ EOD
         foreach ( $_REQUEST as $index => &$request ) {
             if ( $request && substr_compare( $index, Search_Types_Custom_Fields_Widget::OPTIONAL_TEXT_VALUE_SUFFIX,
                 -$suffix_len ) === 0 ) {
+                # using raw user input data directly so we need to be careful - possible sql injection
+                $request = str_replace( '\'', '', $request );
                 $index = substr( $index, 0, strlen( $index ) - $suffix_len );
                 if ( is_array( $_REQUEST[$index] ) || !array_key_exists( $index, $_REQUEST ) ) {
                     if ( substr_compare( $index, 'tax-', 0, 4 ) === 0 ) {
@@ -690,19 +816,21 @@ EOD
                 if ( $values ) { $values = array( $values ); }
                 else { continue; }
             }
-            $values = array_filter( $values ); 
-            if ( !$values ) { continue; }
             $sql2 = '';
             foreach ( $values as $value ) {
                 if ( $sql2 ) { $sql2 .= ' OR '; }
-                if ( $key == 'belongs-parent_of' ) {
+                if ( strpos( $key, 'inverse_' ) === 0 ) {
                     # parent of is the inverse of child of so ...
-                    $sql2 .= "( w.meta_key LIKE '_wpcf_belongs_%' AND w.post_id = $value )";
-                } else if ( $key == 'belongs-child_of' ) {
+                    if ( !$value ) { continue; }
+                    $sql2 .= '( w.meta_key = "' . substr( $key, strpos( $key, '_wpcf_belongs_' ) ) . "\" AND w.post_id = $value )";
+                } else if ( strpos( $key, '_wpcf_belongs_' ) === 0 ) {
                     # child of is like a custom field except the name is special so ...
-                    $sql2 .= "( w.meta_key LIKE '_wpcf_belongs_%' AND w.meta_value = $value )";
+                    if ( !$value ) { continue; }
+                    $sql2 .= "( w.meta_key = '$key' AND w.meta_value = $value )";
                 } else {
                     $wpcf_field =& $wpcf_fields[substr( $key, 5 )];
+                    # skip false values except for single checkbox
+                    if ( $wpcf_field['type'] != 'checkbox' && !$value ) { continue; }
                     if ( $wpcf_field['type'] == 'date' ) {
                         # date can be tricky if user did not enter a complete - to the second - timestamp
                         # need to search on range in that case
@@ -727,14 +855,17 @@ EOD
                                 . $options[$value]['set_value'] . '";';
                         } else if ( $wpcf_field['type'] == 'checkbox' ) {
                             # checkbox is tricky since the value bound to 0 means unchecked so must also check the bound value
-                            $value = $wpcf_field['data']['set_value'];
+                            if ( $value ) { $value = $wpcf_field['data']['set_value']; }
+                        } else {
+                            # maybe using raw user input data directly so we need to be careful - possible sql injection
+                            $value = str_replace( '\'', '', $value );
                         }
                         # TODO: LIKE may match more than we want on serialized array of numeric values - false match on numeric indices
                         $sql2 .= "( w.meta_key = '$key' AND w.meta_value LIKE '%$value%' )";
                     }
                 }
             }   # foreach ( $values as $value ) {
-            if ( $key == 'belongs-parent_of' ) {
+            if ( strpos( $key, 'inverse_' ) === 0 ) {
                 # parent of is the inverse of child of so ...
                 $sql2 = "( $sql2 ) AND w.meta_value = p.ID";
             } else {
