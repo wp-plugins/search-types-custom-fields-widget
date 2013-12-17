@@ -3,7 +3,7 @@ Contributors: Magenta Cuda
 Tags: search, custom fields
 Requires at least: 3.6
 Tested up to: 3.7.1
-Stable tag: 0.4.3
+Stable tag: 0.4.4
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -30,6 +30,8 @@ http://alttypes.wordpress.com/search-types-custom-fields-widget/
 3. The User's Interface for Searching Posts of the Selected Type.
 
 == Changelog ==
+= 0.4.4 =
+* added range search for numeric and date custom fields
 = 0.4.3 =
 * separated child of/parent of categories by post type
 * made items shown per custom field user settable
@@ -42,6 +44,8 @@ http://alttypes.wordpress.com/search-types-custom-fields-widget/
 * Initial release.
 
 == Upgrade Notice ==
+= 0.4.4 =
+* added range search for numeric and date custom fields
 = 0.4.3 =
 * some enhancements and bug fixes
 = 0.4.2 =

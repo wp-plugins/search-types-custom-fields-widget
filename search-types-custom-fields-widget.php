@@ -4,7 +4,7 @@
 Plugin Name: Search Types Custom Fields Widget
 Plugin URI: http://alttypes.wordpress.com/
 Description: Widget for searching Types custom fields and custom taxonomies.
-Version: 0.4.3
+Version: 0.4.4
 Author: Magenta Cuda
 Author URI: http://magentacuda.wordpress.com
 License: GPL2
@@ -37,6 +37,8 @@ class Search_Types_Custom_Fields_Widget extends WP_Widget {
     # end of user configurable constants
     
     const OPTIONAL_TEXT_VALUE_SUFFIX = '-stcfw-optional-text-value';   # suffix to append to optional text input for a search field
+    const OPTIONAL_MINIMUM_VALUE_SUFFIX = '-stcfw-minimum-value';      # suffix to append to optional minimum/maximum value text 
+    const OPTIONAL_MAXIMUM_VALUE_SUFFIX = '-stcfw-maximum-value';      #     inputs for a numeric search field
     const GET_FORM_FOR_POST_TYPE = 'get_form_for_post_type';
     const PARENT_OF = 'For ';                                          # label for parent of relationship
     CONST CHILD_OF = 'Of ';                                            # label for child of relationship
@@ -720,9 +722,21 @@ EOD
                 && $field['type'] != 'select' ) ) {
                 # only show optional input textbox if there are more than SQL_LIMIT items for fields with user specified values
 ?>
-<input id="<?php echo $meta_key. Search_Types_Custom_Fields_Widget::OPTIONAL_TEXT_VALUE_SUFFIX; ?>"
+<input id="<?php echo $meta_key . Search_Types_Custom_Fields_Widget::OPTIONAL_TEXT_VALUE_SUFFIX; ?>"
     name="<?php echo $meta_key . Search_Types_Custom_Fields_Widget::OPTIONAL_TEXT_VALUE_SUFFIX; ?>"
     class="for-select" type="text" style="width:90%;" placeholder="--Enter Search Value--">
+<?php
+            }
+            if ( $field['type'] == 'numeric' || $field['type'] == 'date' ) {
+                # only show minimum/maximum input textbox for numeric and date custom fields
+?>
+<h4>Range Search</h4>
+<input id="<?php echo $meta_key . Search_Types_Custom_Fields_Widget::OPTIONAL_MINIMUM_VALUE_SUFFIX; ?>"
+    name="<?php echo $meta_key . Search_Types_Custom_Fields_Widget::OPTIONAL_MINIMUM_VALUE_SUFFIX; ?>"
+    class="for-select" type="text" style="width:90%;" placeholder="--Enter Minimum Value--">
+<input id="<?php echo $meta_key . Search_Types_Custom_Fields_Widget::OPTIONAL_MAXIMUM_VALUE_SUFFIX; ?>"
+    name="<?php echo $meta_key . Search_Types_Custom_Fields_Widget::OPTIONAL_MAXIMUM_VALUE_SUFFIX; ?>"
+    class="for-select" type="text" style="width:90%;" placeholder="--Enter Maximum Value--">
 <?php
             }
 ?>
@@ -791,11 +805,27 @@ EOD
                         $request = $term_taxonomy_ids[$tax_name][strtolower( $request )];
                     }
                     $_REQUEST[$index][] = $request;
-                    # kill the original request
-                    $request = NULL;
                 }
+                # kill the original request
+                $request = NULL;
             }
         }   # foreach ( $_REQUEST as $index => &$request ) {
+        unset( $request );
+        # merge optional min/max values for numeric custom fields into the checkboxes array
+        $suffix_len = strlen( Search_Types_Custom_Fields_Widget::OPTIONAL_MINIMUM_VALUE_SUFFIX );
+        foreach ( $_REQUEST as $index => &$request ) {
+            if ( $request && ( ( $is_min
+                = substr_compare( $index, Search_Types_Custom_Fields_Widget::OPTIONAL_MINIMUM_VALUE_SUFFIX, -$suffix_len ) === 0 )
+                || substr_compare( $index, Search_Types_Custom_Fields_Widget::OPTIONAL_MAXIMUM_VALUE_SUFFIX, -$suffix_len ) === 0
+            ) ) {
+                $index = substr( $index, 0, strlen( $index ) - $suffix_len );
+                if ( is_array( $_REQUEST[$index] ) || !array_key_exists( $index, $_REQUEST ) ) {
+                    $_REQUEST[$index][] = array( 'operator' => $is_min ? 'minimum' : 'maximum', 'value' => $request );
+                }
+                # kill the original request
+                $request = NULL;
+            }
+        }
         unset( $request );
         #error_log( '##### filter:posts_where:$_REQUEST=' . print_r( $_REQUEST, TRUE ) );
         $wpcf_fields = get_option( 'wpcf-fields', array() );    
@@ -816,7 +846,8 @@ EOD
                 if ( $values ) { $values = array( $values ); }
                 else { continue; }
             }
-            $sql2 = '';
+            $sql2 = '';   # holds meta_value = sql
+            $sql3 = '';   # holds meta_value min/max sql
             foreach ( $values as $value ) {
                 if ( $sql2 ) { $sql2 .= ' OR '; }
                 if ( strpos( $key, 'inverse_' ) === 0 ) {
@@ -829,9 +860,31 @@ EOD
                     $sql2 .= "( w.meta_key = '$key' AND w.meta_value = $value )";
                 } else {
                     $wpcf_field =& $wpcf_fields[substr( $key, 5 )];
-                    # skip false values except for single checkbox
-                    if ( $wpcf_field['type'] != 'checkbox' && !$value ) { continue; }
-                    if ( $wpcf_field['type'] == 'date' ) {
+                    if ( is_array( $value ) ) {
+                        if ( $sql2 ) { $sql2 = substr( $sql2, 0, -4 ); }
+                        # check for minimum/maximum operation
+                        if ( ( $is_min = $value['operator'] == 'minimum' ) || $value['operator'] == 'maximum' ) {
+                            if ( $wpcf_field['type'] == 'date' ) {
+                                # for dates convert to timestamp range
+                                list( $t0, $t1 ) = Search_Types_Custom_Fields_Widget::get_timestamp_from_string( $value['value'] );
+                                if ( $is_min ) {
+                                    # for minimum use start of range
+                                    $value['value'] = $t0;
+                                } else {
+                                    # for maximum use end of range
+                                    $value['value'] = $t1;
+                                }
+                            }
+                            if ( $sql3 ) { $sql3 .= ' AND '; }
+                            if ( $is_min ) {
+                                $sql3 .= "( w.meta_key = '$key' AND w.meta_value >= $value[value] )";
+                            } else if ( $value['operator'] == 'maximum' ) {
+                                $sql3 .= "( w.meta_key = '$key' AND w.meta_value <= $value[value] )";
+                            }
+                        }
+                    } else if ( $wpcf_field['type'] != 'checkbox' && !$value ) {
+                        # skip false values except for single checkbox
+                    } else if ( $wpcf_field['type'] == 'date' ) {
                         # date can be tricky if user did not enter a complete - to the second - timestamp
                         # need to search on range in that case
                         if ( is_numeric( $value ) ) {
@@ -865,6 +918,14 @@ EOD
                     }
                 }
             }   # foreach ( $values as $value ) {
+            if ( $sql3 ) {
+                # merge in min/max conditions
+                if ( $sql2 ) {
+                    $sql2 .= " OR ( $sql3 ) ";
+                } else {
+                    $sql2 = $sql3;
+                }
+            }
             if ( strpos( $key, 'inverse_' ) === 0 ) {
                 # parent of is the inverse of child of so ...
                 $sql2 = "( $sql2 ) AND w.meta_value = p.ID";
