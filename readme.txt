@@ -3,7 +3,7 @@ Contributors: Magenta Cuda
 Tags: search, custom fields
 Requires at least: 3.6
 Tested up to: 3.9
-Stable tag: 0.4.5
+Stable tag: 0.4.5.3
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -33,6 +33,11 @@ http://alttypes.wordpress.com/search-types-custom-fields-widget/
 6. A Sample Table of Post
 
 == Changelog ==
+= 0.4.5.3 =
+* added search by post author
+* added support for post type specific css files
+* fix pagination bug
+* fix several other bugs
 = 0.4.5 =
 * optionally display seach results in a table format
 * optionally set query type to is_search so only excerpts are displayed for applicable themes
@@ -51,6 +56,11 @@ http://alttypes.wordpress.com/search-types-custom-fields-widget/
 * Initial release.
 
 == Upgrade Notice ==
+= 0.4.5.3 =
+* added search by post author
+* added support for post type specific css files
+* fix pagination bug
+* fix several other bugs
 = 0.4.5 =
 * optionally display seach results in a table format
 * optionally set query type to is_search so only excerpts are displayed for applicable themes
