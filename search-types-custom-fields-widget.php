@@ -4,7 +4,7 @@
 Plugin Name: Search Types Custom Fields Widget
 Plugin URI: http://alttypes.wordpress.com/
 Description: Widget for searching Types custom fields and custom taxonomies.
-Version: 0.4.5
+Version: 0.4.5.3
 Author: Magenta Cuda (PHP), Black Charger (JavaScript)
 Author URI: http://magentacuda.wordpress.com
 License: GPL2
@@ -93,7 +93,7 @@ class Search_Types_Custom_Fields_Widget extends WP_Widget {
 <h2>Search:</h2>
 <div class="search-types-custom-fields-widget-parameter" style="padding:5px 10px;border:2px solid black;margin:5px;">
 <h3>post type:</h3>
-<select id="post_type" name="post_type" required style="width:100%;">
+<select id="post_type" name="post_type" class="post_type" required style="width:100%;">
 <option value="no-selection">--select post type--</option>
 <?php
         $results = $wpdb->get_results( <<<EOD
@@ -112,7 +112,7 @@ EOD
                     continue;
             }      
 ?>      
-<option value="<?php echo $name; ?>"><?php echo "$name ($result->count)"; ?></option>
+<option class="real_post_type" value="<?php echo $name; ?>"><?php echo "$name ($result->count)"; ?></option>
 <?php
         }   # foreach ( $results as $result ) {
 ?>
@@ -135,7 +135,7 @@ of the search conditions.
 <div style="margin:10px">
 <input type="checkbox" name="search_types_custom_fields_show_using_macro" value="use macro"
     style="float:right;margin-top:5px;margin-left:5px;">
-Show search results in alternate format:
+Show search results in table format:
 </div>
 <?php
         }
@@ -147,8 +147,8 @@ Show search results in alternate format:
 </div>
 </div>
 </form>
-<script>
-jQuery("form#search-types-custom-fields-widget-<?php echo $this->number; ?> select#post_type").change(function(){
+<script type="text/javascript">
+jQuery("form#search-types-custom-fields-widget-<?php echo $this->number; ?> select.post_type").change(function(){
     jQuery.post(
         "<?php echo admin_url( 'admin-ajax.php' ); ?>",{
             action:"<?php echo Search_Types_Custom_Fields_Widget::GET_FORM_FOR_POST_TYPE; ?>",
@@ -169,6 +169,13 @@ jQuery("form#search-types-custom-fields-widget-<?php echo $this->number; ?> sele
                 +" div#search-types-custom-fields-submit-box").css("display","block");
         }
     );
+});
+jQuery(document).ready(function(){
+    if(jQuery("form#search-types-custom-fields-widget-<?php echo $this->number; ?> select.post_type option.real_post_type").length===1){
+        jQuery("form#search-types-custom-fields-widget-<?php echo $this->number; ?> select.post_type option.real_post_type").prop("selected",true);
+        jQuery("form#search-types-custom-fields-widget-<?php echo $this->number; ?> select.post_type").change();
+        jQuery("form#search-types-custom-fields-widget-<?php echo $this->number; ?> select.post_type").parent("div").css("display","none");
+    }
 });
 </script>
 <?php
@@ -348,9 +355,10 @@ EOD;
             #error_log( '##### Search_Types_Custom_Fields_Widget::form():$sql=' . $sql );
             $results = $wpdb->get_results( $sql, OBJECT );
             foreach ( $results as $result ) {
+                $post_type = substr( $result->meta_key, 14, strlen( $result->meta_key ) - 17 );
                 $fields[$result->meta_key] = (object) array(
-                    'label' => self::CHILD_OF
-                        . $wpcf_types[substr( $result->meta_key, 14, strlen( $result->meta_key ) - 17 )]['labels']['name'], 
+                    'label' => self::CHILD_OF . ( $post_type === 'post' || $post_type === 'page' ? $post_type
+                        : $wpcf_types[$post_type]['labels']['name'] ), 
                     'count' => $result->count
                 );
             }
@@ -358,7 +366,8 @@ EOD;
             $sql = <<<EOD
                 SELECT pi.post_type, m.meta_key, COUNT( DISTINCT m.meta_value ) count
                     FROM $wpdb->postmeta m, $wpdb->posts pv, $wpdb->posts pi
-                    WHERE m.meta_value = pv.ID AND pv.post_type = "$name" AND m.post_id = pi.ID
+                    WHERE m.meta_value = pv.ID AND pv.post_type = "$name" AND pv.post_status = "publish"
+                        AND m.post_id = pi.ID AND pi.post_status = "publish"
                         AND m.meta_key LIKE '_wpcf_belongs_%'
                     GROUP BY pi.post_type
 EOD;
@@ -367,7 +376,8 @@ EOD;
             #error_log( '##### Search_Types_Custom_Fields_Widget::form():$results=' . print_r( $results, TRUE ) );
             foreach ( $results as $result ) {
                 $fields["inverse_{$result->post_type}_{$result->meta_key}"] = (object) array(
-                    'label' => self::PARENT_OF . $wpcf_types[$result->post_type]['labels']['name'], 
+                    'label' => self::PARENT_OF . ( $result->post_type === 'post' || $result->post_type === 'page'
+                        ? $result->post_type : $wpcf_types[$result->post_type]['labels']['name'] ), 
                     'count' => $result->count
                 );
             }
@@ -378,6 +388,11 @@ EOD;
 EOD;
             #error_log( '##### Search_Types_Custom_Fields_Widget::form():$sql=' . $sql );
             $fields['pst-std-attachment']   = (object) array( 'label' => 'Attachment', 'count' => $wpdb->get_var( $sql ) );
+            $sql = <<<EOD
+                SELECT COUNT(*) FROM $wpdb->posts p
+                    WHERE p.post_type = "$name" AND p.post_status = "publish" AND p.post_author IS NOT NULL
+EOD;
+            $fields['pst-std-post_author']  = (object) array( 'label' => 'Author', 'count' => $wpdb->get_var( $sql ) );
             #error_log( '##### Search_Types_Custom_Fields_Widget::form():$fields=' . print_r( $fields, TRUE ) );
             # remove all invalid custom fields.
             $fields = array_filter( $fields );
@@ -729,10 +744,12 @@ EOD;
                 } ) ) {
                     #error_log( '##### action:wp_ajax_nopriv_' . Search_Types_Custom_Fields_Widget::GET_FORM_FOR_POST_TYPE
                     #    . ':$new_results=' . print_r( $new_results, TRUE ) );
+                    $post_type = substr( $parent, 14, strlen( $parent ) - 17 );
                     $fields[$parent] = array(
                         'type' => 'child_of',
                         'label' => Search_Types_Custom_Fields_Widget::CHILD_OF
-                            . $wpcf_types[substr( $parent, 14, strlen( $parent ) - 17 )]['labels']['name'], 
+                            . ( $post_type === 'post' || $post_type === 'page' ? $post_type
+                                : $wpcf_types[$post_type]['labels']['name'] ), 
                         'values' => array_reduce( $selected_results, function( $new_results, $result ) {
                                 #error_log( '##### array_reduce():function():$result=' . print_r( $result, TRUE ) );
                                 $new_results[$result->meta_value] = $result->count;
@@ -781,7 +798,9 @@ EOD;
                     #    . ':$new_results=' . print_r( $new_results, TRUE ) );
                     $fields["inverse_{$post_type}_{$selected_parent_of}"] = array(
                         'type' => 'parent_of',
-                        'label' => Search_Types_Custom_Fields_Widget::PARENT_OF . $wpcf_types[$post_type]['labels']['name'], 
+                        'label' => Search_Types_Custom_Fields_Widget::PARENT_OF
+                            . ( $post_type === 'post' || $post_type === 'page' ? $post_type
+                            : $wpcf_types[$post_type]['labels']['name'] ), 
                         'values' => array_reduce( $selected_results, function( $new_results, $result ) {
                                 #error_log( '##### array_reduce():function():$result=' . print_r( $result, TRUE ) );
                                 $new_results[$result->post_id] = $result->count;
@@ -798,6 +817,9 @@ EOD;
         }
         if ( in_array( 'pst-std-attachment', $selected ) ) {
             $fields['pst-std-attachment']   = array( 'type' => 'attachment', 'label' => 'Attachment'   );
+        }
+        if ( in_array( 'pst-std-post_author', $selected ) ) {
+            $fields['pst-std-post_author']  = array( 'type' => 'author',     'label' => 'Author'   );
         }
         #error_log( 'action:wp_ajax_nopriv_' . Search_Types_Custom_Fields_Widget::GET_FORM_FOR_POST_TYPE . ':$fields='
         #    . print_r( $fields, TRUE ) );
@@ -852,6 +874,26 @@ EOD
 <?php
                 continue;
             }   # if ( $meta_key === 'pst-std-attachment' ) {
+            if ( $meta_key === 'pst-std-post_author' ) {
+                # use author display name in place of author id
+                $results = $wpdb->get_results( <<<EOD
+                    SELECT p.post_author, u.display_name, COUNT(*) count FROM $wpdb->posts p, $wpdb->users u
+                        WHERE p.post_author = u.ID AND p.post_type = "$_REQUEST[post_type]" AND p.post_status = "publish"
+                            AND p.post_author IS NOT NULL GROUP BY p.post_author
+EOD
+                    , OBJECT );
+                foreach ( $results as $result ) {
+?>
+<input type="checkbox" id="<?php echo $meta_key ?>" name="<?php echo $meta_key ?>[]"
+    value="<?php echo $result->post_author; ?>"> <?php echo $result->display_name . " ($result->count)"; ?><br>
+<?php
+                }
+?>
+</div>
+</div>
+<?php
+                continue;
+            }   # if ( $meta_key === 'pst-std-post_author' ) {
             #error_log( '##### wp_ajax_nopriv_' . Search_Types_Custom_Fields_Widget::GET_FORM_FOR_POST_TYPE
             #    . ':$field[values]=' . print_r( $field['values'], TRUE ) );
             # now output the checkboxes
@@ -976,9 +1018,11 @@ jQuery("button.scpbcfw-display-button").click(function(event){
         $number = $_REQUEST['search_types_custom_fields_widget_number'];
         if ( isset( $option[$number]['set_is_search'] ) ) { $query->is_search = true; }
     } );
-	add_filter( 'posts_where', function( $where, $query ) {
+    add_filter( 'posts_where', function( $where, $query ) {
         global $wpdb;
-        if ( !$query->is_main_query() || !array_key_exists( 'search_types_custom_fields_form', $_REQUEST ) ) { return $where; }
+        if ( !$query->is_main_query() || !array_key_exists( 'search_types_custom_fields_form', $_REQUEST ) ) {
+            return $where;
+        }
         # this is a Types search request so modify the SQL where clause
         #error_log( '##### posts_where:$_REQUEST=' . print_r( $_REQUEST, TRUE ) );
         $and_or = $_REQUEST['search_types_custom_fields_and_or'] == 'and' ? 'AND' : 'OR';
@@ -1042,7 +1086,7 @@ EOD
         #error_log( 'posts_where:$where=' . $where );
         $non_field_keys = array( 'search_types_custom_fields_form', 'search_types_custom_fields_widget_option',
             'search_types_custom_fields_widget_number', 'search_types_custom_fields_and_or',
-            'search_types_custom_fields_show_using_macro', 'post_type' );
+            'search_types_custom_fields_show_using_macro', 'post_type', 'paged' );
         $sql = '';
         foreach ( $_REQUEST as $key => $values ) {
             # here only searches on the table $wpdb->postmeta are processed; everything is done later.
@@ -1125,7 +1169,7 @@ EOD
                             $value = str_replace( '\'', '', $value );
                         }
                         # TODO: LIKE may match more than we want on serialized array of numeric values - false match on numeric indices
-                        $sql2 .= "( w.meta_key = '$key' AND w.meta_value LIKE '%$value%' )";
+                        $sql2 .= $wpdb->prepare( "( w.meta_key = %s AND w.meta_value LIKE %s )", $key, "%$value%" );
                     }
                 }
             }   # foreach ( $values as $value ) {
@@ -1198,12 +1242,12 @@ EOD
         if ( $and_or == 'AND' && $ids !== FALSE && !$ids ) { return ' AND 1 = 2 '; }
         # finally handle post_content - post_title and post_excerpt are included in the search of post_content
         if ( array_key_exists( 'pst-std-post_content', $_REQUEST ) && $_REQUEST['pst-std-post_content'] ) {
-            $sql = <<<EOD
-                SELECT ID FROM $wpdb->posts WHERE post_type = "$_REQUEST[post_type]" AND post_status = "publish"
-                    AND ( post_content  LIKE "%{$_REQUEST['pst-std-post_content']}%"
-                        OR post_title   LIKE "%{$_REQUEST['pst-std-post_content']}%"
-                        OR post_excerpt LIKE "%{$_REQUEST['pst-std-post_content']}%" )
-EOD;
+            $sql = $wpdb->prepare( <<<EOD
+                SELECT ID FROM $wpdb->posts WHERE post_type = %s AND post_status = "publish"
+                    AND ( post_content LIKE %s OR post_title LIKE %s OR post_excerpt LIKE %s )
+EOD
+                , $_REQUEST[post_type], "%{$_REQUEST['pst-std-post_content']}%", "%{$_REQUEST['pst-std-post_content']}%",
+                "%{$_REQUEST['pst-std-post_content']}%" );
             $ids3 = $wpdb->get_col( $sql );
             if ( $and_or == 'AND' && !$ids3 ) { return ' AND 1 = 2 '; }
         } else {
@@ -1211,19 +1255,44 @@ EOD;
         }
         $ids = Search_Types_Custom_Fields_Widget::join_arrays( $and_or, $ids, $ids3 );
         if ( $and_or == 'AND' && $ids !== FALSE && !$ids ) { return ' AND 1 = 2 '; }
+        # filter on post_author
+        if ( array_key_exists( 'pst-std-post_author', $_REQUEST ) && $_REQUEST['pst-std-post_author'] ) {
+            $sql = "SELECT ID FROM $wpdb->posts WHERE post_type = '$_REQUEST[post_type]' AND post_status = 'publish' "
+                . 'AND post_author IN ( ' . implode( ',', $_REQUEST['pst-std-post_author'] ) . ' )';
+EOD;
+            $ids4 = $wpdb->get_col( $sql );
+            if ( $and_or == 'AND' && !$ids4 ) { return ' AND 1 = 2 '; }
+        } else {
+            $ids4 = FALSE;
+        }
+        $ids = Search_Types_Custom_Fields_Widget::join_arrays( $and_or, $ids, $ids4 );
+        if ( $and_or == 'AND' && $ids !== FALSE && !$ids ) { return ' AND 1 = 2 '; }        
         if ( $ids ) {
             $ids = implode( ', ', $ids );
             $where = " AND ID IN ( $ids ) ";
         } else {
-            $where = " AND post_type = '$_REQUEST[post_type]' AND post_status = 'publish' ";
+            #$where = " AND post_type = "$_REQUEST[post_type]" AND post_status = 'publish' ";
+            $where = ' AND 1 = 2 ';
         }
         #error_log( '##### posts_where:$where=' . $where );
         return $where;
     }, 10, 2 );
     if ( isset( $_REQUEST['search_types_custom_fields_show_using_macro'] )
         && $_REQUEST['search_types_custom_fields_show_using_macro'] === 'use macro' ) {
+        # for alternate output format do not page output
+        add_filter( 'post_limits', function( $limit, &$query ) {
+            if ( !$query->is_main_query() ) { return $limit; }
+            return ' ';
+        }, 10, 2 );
         add_action( 'wp_enqueue_scripts', function() {
-            wp_enqueue_style( 'search_results_table', plugins_url( 'search-results-table.css', __FILE__ ) );
+            # use post type specific css file if it exists otherwise use the default css file
+            if ( file_exists( dirname( __FILE__ ) . "/search-results-table-$_REQUEST[post_type].css") ) {
+                wp_enqueue_style( 'search_results_table', plugins_url( "search-results-table-$_REQUEST[post_type].css",
+                  __FILE__ ) );
+            } else {
+                wp_enqueue_style( 'search_results_table', plugins_url( 'search-results-table.css',
+                  __FILE__ ) );
+            }
         } );
         add_action( 'template_redirect', function() {
             global $wp_query;
@@ -1244,8 +1313,8 @@ EOD;
             if ( !$fields ) {
                 $fields = $option[$number][$_REQUEST['post_type']];
             }
-            # remove pst-std-content fields
-            $fields = array_filter( $fields, function( $field ) { return $field !== 'pst-std-content'; } );
+            # remove pst-std-post_content fields
+            $fields = array_filter( $fields, function( $field ) { return $field !== 'pst-std-post_content'; } );
             if ( $container_width = $option[$number]['search_table_width'] ) {
                 $container_style .= "style=\"width:{$container_width}px\"";
             }
@@ -1268,6 +1337,8 @@ EOD;
                     $field = substr( $field, 8 );
                 } else if ( $field === 'pst-std-attachment' ) {
                     $field = 'attachment';
+                } else if ( $field === 'pst-std-post_author' ) {
+                    $field = 'author';
                 } else if ( substr_compare( $field, 'wpcf-', 0, 5, false ) === 0 ) {
                     $field = substr( $field, 5 );
                 } else if ( substr_compare( $field, '_wpcf_belongs_', 0, 14 ) === 0 ) {
@@ -1302,6 +1373,7 @@ EOD;
                         }
                     } else if ( ( $child_of = strpos( $field, '_wpcf_belongs_' ) === 0 )
                         || ( $parent_of = strpos( $field, 'inverse_' ) === 0 ) ) {
+                        #error_log( '##### action:template_redirect():$field=' . $field );
                         #error_log( '##### action:template_redirect():$child_of=' . $child_of );
                         #error_log( '##### action:template_redirect():$parent_of=' . $parent_of );
                         #$field = substr( $field, strpos( $field, '_wpcf_belongs_' ) + 14 );
@@ -1309,8 +1381,9 @@ EOD;
                             if ( !isset( $child_of_values[$field] ) ) {
                                 # Do one query for all posts on first post and save the result for later posts
                                 $child_of_values[$field] = $wpdb->get_results( <<<EOD
-                                    SELECT post_id, meta_value FROM $wpdb->postmeta
-                                        WHERE meta_key = '$field' AND post_id IN ( $posts_imploded )
+                                    SELECT m.post_id, m.meta_value FROM $wpdb->postmeta m, $wpdb->posts p
+                                        WHERE m.meta_value = p.ID AND p.post_status = 'publish'
+                                            AND m.meta_key = '$field' AND m.post_id IN ( $posts_imploded )
 EOD
                                     , OBJECT_K );
                             }
@@ -1319,10 +1392,12 @@ EOD
                             if ( !isset( $parent_of_values[$field] ) ) {
                                 # Do one query for all posts on first post and save the result for later posts
                                 # This case is more complex since a parent can have multiple childs
+                                $post_type = substr( $field, 8, strpos( $field, '_wpcf_belongs_' ) - 9 );
                                 $meta_key = substr( $field, strpos( $field, '_wpcf_belongs_' ) );
                                 $results = $wpdb->get_results( <<<EOD
-                                    SELECT meta_value, post_id FROM $wpdb->postmeta
-                                        WHERE meta_key = '$meta_key' AND meta_value IN ( $posts_imploded )
+                                    SELECT m.meta_value, m.post_id FROM $wpdb->postmeta m, $wpdb->posts p
+                                        WHERE m.post_id = p.ID AND p.post_status = 'publish' AND p.post_type = '$post_type'
+                                            AND m.meta_key = '$meta_key' AND m.meta_value IN ( $posts_imploded )
 EOD
                                     , OBJECT );
                                 $values = array();
@@ -1366,6 +1441,27 @@ EOD
                             $label = implode( ', ', array_map( function( $v ) use ( &$post_titles ) {
                                 return "<a href=\"{$post_titles[$v]->guid}\">{$post_titles[$v]->post_title}</a>";
                             }, $attachments[$post] ) );
+                            $td = "<td class=\"scpbcfw-result-table-detail-$field\">$label</td>";
+                        }
+                    } else if ( $field === 'pst-std-post_author' ) {
+                        # use user display name in place of user id
+                        # for efficiency on first iteration get all relevant user data for all posts for use by later iterations
+                        if ( !isset( $authors ) ) {
+                            $authors = $wpdb->get_results( <<<EOD
+                                SELECT p.ID, u.display_name, u.user_url FROM $wpdb->posts p, $wpdb->users u
+                                    WHERE p.post_author = u.ID AND p.ID IN ( $posts_imploded )
+EOD
+                                , OBJECT_K );
+                        }
+                        if ( array_key_exists( $post, $authors ) ) {
+                            $author =& $authors[$post];
+                            # if author has a url then display author name as a link to his url
+                            if ( $author->user_url ) {
+                                $label = "<a href=\"$author->user_url\">$author->display_name</a>";
+                            } else {
+                                $label = $author->display_name;
+                            }
+                            unset($author);
                             $td = "<td class=\"scpbcfw-result-table-detail-$field\">$label</td>";
                         }
                     } else {
