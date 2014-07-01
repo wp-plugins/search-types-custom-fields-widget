@@ -4,7 +4,7 @@
 Plugin Name: Search Types Custom Fields Widget
 Plugin URI: http://alttypes.wordpress.com/
 Description: Widget for searching Types custom fields and custom taxonomies.
-Version: 0.4.5.3
+Version: 0.4.6
 Author: Magenta Cuda (PHP), Black Charger (JavaScript)
 Author URI: http://magentacuda.wordpress.com
 License: GPL2
@@ -1322,13 +1322,25 @@ EOD;
             # the macro has parameters: posts - a list of post ids, fields - a list of field names, a_post - any valid post id,
             # and post_type - the post type
             # finally output all the HTML
+            # first do the header
+            wp_enqueue_script( 'jquery' );
+            wp_enqueue_script( 'jquery.tablesorter.min', plugins_url( 'jquery.tablesorter.min.js', __FILE__ ),
+                array( 'jquery' ) );
+            add_action( 'wp_head', function () {
+?>
+<script type="text/javascript">
+    jQuery(document).ready(function(){jQuery("table.tablesorter").tablesorter();}); 
+</script>
+<?php
+            });
             get_header();
+            # then do the body content
             $wpcf_fields = get_option( 'wpcf-fields', array() );
             $content = <<<EOD
 <div style="width:99%;overflow:auto;">
     <div class="scpbcfw-result-container"$container_style>
-        <table class="scpbcfw-result-table">
-            <tr><th class="scpbcfw-result-table-head-post">post</th>
+        <table class="scpbcfw-result-table tablesorter">
+            <thead><tr><th class="scpbcfw-result-table-head-post">post</th>
 EOD;
             # fix taxonomy names for use as titles
             foreach ( $fields as $field ) {
@@ -1349,7 +1361,7 @@ EOD;
                 $content .= "<th class=\"scpbcfw-result-table-head-$field\">$field</th>";
             }
             unset( $field );
-            $content .= '</tr>';
+            $content .= '</tr></thead><tbody>';
             $post_titles = $wpdb->get_results( <<<EOD
                 SELECT ID, post_title, guid, post_type FROM $wpdb->posts ORDER BY ID
 EOD
@@ -1584,7 +1596,7 @@ EOD
                 }
                 $content .= '</tr>';
             }
-            $content .= '</table></div></div>';
+            $content .= '</tbody></table></div></div>';
             #error_log( '##### action:template_redirect():$content='  . print_r( $content,  true ) );
             echo $content;
             get_footer();
