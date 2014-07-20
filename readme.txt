@@ -3,14 +3,14 @@ Contributors: Magenta Cuda
 Tags: search, custom fields
 Requires at least: 3.6
 Tested up to: 3.9
-Stable tag: 0.4.6
+Stable tag: 0.4.6.1
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
 Search Types custom posts for posts that have user specified values for Types custom fields.
 
 == Description ==
-This search widget can search for [Types](http://wordpress.org/plugins/types/) custom posts, WordPress posts and pages by the value of Types custom fields, WordPress taxonomies and post content. It is designed to be used with the Types plugin only and makes use of Types' proprietary database format to generate user friendly field names and field values. The widget uses user friendly substitutions for the actual values in the database when appropriate, e.g. post title is substituted for post id in parent/child fields. Please visit the [online documentation](http://alttypes.wordpress.com/search-types-custom-fields-widget/) for more details. **This plugin works with Types 1.5.7 and requires at least PHP 5.4.**
+This search widget can search for [Types](http://wordpress.org/plugins/types/) custom posts, WordPress posts and pages by the value of Types custom fields, WordPress taxonomies and post content. It is designed to be used with the Types plugin only and makes use of Types' proprietary database format to generate user friendly field names and field values. The widget uses user friendly substitutions for the actual values in the database when appropriate, e.g. post title is substituted for post id in parent/child fields. Please visit the [online documentation](http://alttypes.wordpress.com/search-types-custom-fields-widget/) for more details. **This plugin works with Types 1.5.7 and requires at least PHP 5.4.** [This plugin is not compatible with the WordPress Multilingual Plugin by OnTheGoSystems.](http://wordpress.org/support/topic/incompatibility-between-my-plugin-and-wpml-multilingual)
 
 == Installation ==
 1. Upload the folder "search-types-custom-fields-widget" to the "/wp-content/plugins/" directory.
@@ -33,6 +33,9 @@ http://alttypes.wordpress.com/search-types-custom-fields-widget/
 6. A Sample Table of Post
 
 == Changelog ==
+= 0.4.6.1 =
+fixed search by tags by input box bug
+added style sheet for search widget
 = 0.4.6 =
 added support for sortable tables for search results.
 = 0.4.5.3 =
@@ -58,6 +61,9 @@ added support for sortable tables for search results.
 * Initial release.
 
 == Upgrade Notice ==
+= 0.4.6.1 =
+fixed search by tags by input box bug
+added style sheet for search widget
 = 0.4.6 =
 added support for sortable tables for search results.
 = 0.4.5.3 =
