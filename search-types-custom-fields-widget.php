@@ -4,7 +4,7 @@
 Plugin Name: Search Types Custom Fields Widget
 Plugin URI: http://alttypes.wordpress.com/
 Description: Widget for searching Types custom fields and custom taxonomies.
-Version: 0.4.6
+Version: 0.4.6.1
 Author: Magenta Cuda (PHP), Black Charger (JavaScript)
 Author URI: http://magentacuda.wordpress.com
 License: GPL2
@@ -84,7 +84,8 @@ class Search_Types_Custom_Fields_Widget extends WP_Widget {
         extract( $args );
         #error_log( '##### Search_Types_Custom_Fields_Widget::widget():$instance=' . print_r( $instance, TRUE ) );
 ?>
-<form id="search-types-custom-fields-widget-<?php echo $this->number; ?>" method="get" action="<?php echo esc_url( home_url( '/' ) ); ?>">
+<form id="search-types-custom-fields-widget-<?php echo $this->number; ?>" class="scpbcfw-search-fields-form" method="get"
+    action="<?php echo esc_url( home_url( '/' ) ); ?>">
 <input id="search_types_custom_fields_form" name="search_types_custom_fields_form" type="hidden" value="types-fields-search">
 <input id="search_types_custom_fields_widget_option" name="search_types_custom_fields_widget_option" type="hidden"
     value="<?php echo $this->option_name; ?>">
@@ -120,7 +121,7 @@ EOD
 </div>
 <div id="search-types-custom-fields-parameters"></div>
 <div id="search-types-custom-fields-submit-box" style="display:none">
-<div style="border:2px solid black;padding:5px;margin:5px;border-radius:7px;">
+<div class="scpbcfw-search-fields-and-or-box">
 <div style="text-align:center;margin:10px;">
 Results should satisfy<br> 
 <input type="radio" name="search_types_custom_fields_and_or" value="and" checked><strong>All</strong>
@@ -203,7 +204,11 @@ jQuery(document).ready(function(){
         #error_log( '##### Search_Types_Custom_Fields_Widget::form():$wpcf_types='  . print_r( $wpcf_types, TRUE  ) );
         #error_log( '##### Search_Types_Custom_Fields_Widget::form():$wpcf_fields=' . print_r( $wpcf_fields, TRUE ) );
 ?>
-<h4>Select Search Fields and Table Display Fields for:</h4>
+<div style="background-color:#c0c0c0;width:25%;float:right;border:2px solid black;border-radius:7px;text-align:center;margin:5px;">
+<a href="http://alttypes.wordpress.com/#administrator" target="_blank">help</a>
+</div>
+<h4 style="float:left;margin:5px;">Select Search Fields and Table Display Fields for:</h4>
+<p style="clear:both;margin:0px;">
 <?php
         # use all Types custom post types and the WordPress built in "post" and "page"
         $wpcf_types_keys = '"' . implode( '", "', array_keys( $wpcf_types ) ) . '", "post", "page"';
@@ -587,6 +592,11 @@ if ( is_admin() ) {
         $wpcf_types  = get_option( 'wpcf-custom-types', array() );
         #error_log( '##### Search_Types_Custom_Fields_Widget::form():$wpcf_types=' . print_r( $wpcf_types, TRUE ) );
 ?>
+<div id="scpbcfw-search-fields-help">
+<a href="http://alttypes.wordpress.com/#user"
+    target="_blank">help</a>
+</div>
+<p style="clear:both;margin:0px;">
 <h4>Please specify search conditions:<h4>
 <?php
         #error_log( '##### action:wp_ajax_nopriv_' . Search_Types_Custom_Fields_Widget::GET_FORM_FOR_POST_TYPE
@@ -638,9 +648,9 @@ EOD;
             $values =& $terms[$tax_name];
             $taxonomy = $taxonomies[$tax_name];
 ?>
-<div class="scpbcfw-search-fields" style="padding:5px 10px;border:2px solid black;margin:5px;">
-<span style="font-size=16px;font-weight:bold;float:left;"><?php echo $taxonomy->label ?>:</span>
-<button class="scpbcfw-display-button" style="font-size:12px;font-weight:bold;padding:3px;float:right;">Open</button>
+<div class="scpbcfw-search-fields">
+<span class="scpbcfw-search-fields-field-label"><?php echo $taxonomy->label ?>:</span>
+<button class="scpbcfw-display-button">Open</button>
 <div style="clear:both;"></div>
 <div class="scpbcfw-search-field-values" style="display:none;">
 <?php
@@ -655,8 +665,10 @@ EOD;
             unset( $result );
             if ( $count == $SQL_LIMIT ) {
 ?>
-<input type="text" id="<?php echo $tax_type . $taxonomy->name; ?>" name="<?php echo $tax_type . $taxonomy->name; ?>[]"
-    class="for-select" style="width:90%;" placeholder="--Enter New Search Value--">
+<input type="text"
+    id="<?php echo $tax_type . $taxonomy->name . Search_Types_Custom_Fields_Widget::OPTIONAL_TEXT_VALUE_SUFFIX; ?>"
+    name="<?php echo $tax_type . $taxonomy->name . Search_Types_Custom_Fields_Widget::OPTIONAL_TEXT_VALUE_SUFFIX; ?>"
+    class="scpbcfw-search-fields-for-input" placeholder="--Enter New Search Value--">
 <?php
             }
 ?>
@@ -839,15 +851,15 @@ EOD;
             #    . print_r( $field, TRUE ) );
             $wpcf_field =& $wpcf_fields[substr( $meta_key, 5 )];
 ?>
-<div class="scpbcfw-search-fields" style="padding:5px 10px;border:2px solid black;margin:5px;">
-<span style="font-size=16px;font-weight:bold;float:left;"><?php echo $field['label'] ?>:</span>
-<button class="scpbcfw-display-button" style="font-size:12px;font-weight:bold;padding:3px;float:right;">Open</button>
+<div class="scpbcfw-search-fields">
+<span class="scpbcfw-search-fields-field-label"><?php echo $field['label'] ?>:</span>
+<button class="scpbcfw-display-button">Open</button>
 <div style="clear:both;"></div>
 <div class="scpbcfw-search-field-values" style="display:none;">
 <?php
             if ( $field['type'] == 'textarea' || $field['type'] == 'wysiwyg' ) {
 ?>
-<input id="<?php echo $meta_key ?>" name="<?php echo $meta_key ?>" class="for-input" type="text" style="width:90%;"
+<input id="<?php echo $meta_key ?>" name="<?php echo $meta_key ?>" class="scpbcfw-search-fields-for-input" type="text"
     placeholder="--Enter Search Value--">
 </div>
 </div>
@@ -968,7 +980,7 @@ EOD
 ?>
 <input id="<?php echo $meta_key . Search_Types_Custom_Fields_Widget::OPTIONAL_TEXT_VALUE_SUFFIX; ?>"
     name="<?php echo $meta_key . Search_Types_Custom_Fields_Widget::OPTIONAL_TEXT_VALUE_SUFFIX; ?>"
-    class="for-select" type="text" style="width:90%;" placeholder="--Enter Search Value--">
+    class="scpbcfw-search-fields-for-input" type="text" placeholder="--Enter Search Value--">
 <?php
             }
             if ( $field['type'] == 'numeric' || $field['type'] == 'date' ) {
@@ -977,10 +989,10 @@ EOD
 <h4>Range Search</h4>
 <input id="<?php echo $meta_key . Search_Types_Custom_Fields_Widget::OPTIONAL_MINIMUM_VALUE_SUFFIX; ?>"
     name="<?php echo $meta_key . Search_Types_Custom_Fields_Widget::OPTIONAL_MINIMUM_VALUE_SUFFIX; ?>"
-    class="for-select" type="text" style="width:90%;" placeholder="--Enter Minimum Value--">
+    class="scpbcfw-search-fields-for-input" type="text" placeholder="--Enter Minimum Value--">
 <input id="<?php echo $meta_key . Search_Types_Custom_Fields_Widget::OPTIONAL_MAXIMUM_VALUE_SUFFIX; ?>"
     name="<?php echo $meta_key . Search_Types_Custom_Fields_Widget::OPTIONAL_MAXIMUM_VALUE_SUFFIX; ?>"
-    class="for-select" type="text" style="width:90%;" placeholder="--Enter Maximum Value--">
+    class="scpbcfw-search-fields-for-input" type="text" placeholder="--Enter Maximum Value--">
 <?php
             }
 ?>
@@ -1007,6 +1019,7 @@ jQuery("button.scpbcfw-display-button").click(function(event){
     } );   # add_action( 'wp_ajax_nopriv_' . Search_Types_Custom_Fields_Widget::GET_FORM_FOR_POST_TYPE, function() {   
 } else {
     add_action( 'wp_enqueue_scripts', function() {
+        wp_enqueue_style( 'search', plugins_url( 'search.css', __FILE__ ) );
         wp_enqueue_script( 'jquery' );
     } );
     add_action( 'parse_query', function( &$query ) {
@@ -1043,8 +1056,6 @@ EOD
         foreach ( $_REQUEST as $index => &$request ) {
             if ( $request && substr_compare( $index, Search_Types_Custom_Fields_Widget::OPTIONAL_TEXT_VALUE_SUFFIX,
                 -$suffix_len ) === 0 ) {
-                # using raw user input data directly so we need to be careful - possible sql injection
-                $request = str_replace( '\'', '', $request );
                 $index = substr( $index, 0, strlen( $index ) - $suffix_len );
                 if ( is_array( $_REQUEST[$index] ) || !array_key_exists( $index, $_REQUEST ) ) {
                     if ( substr_compare( $index, 'tax-', 0, 4 ) === 0 ) {
@@ -1164,9 +1175,6 @@ EOD
                         } else if ( $wpcf_field['type'] == 'checkbox' ) {
                             # checkbox is tricky since the value bound to 0 means unchecked so must also check the bound value
                             if ( $value ) { $value = $wpcf_field['data']['set_value']; }
-                        } else {
-                            # maybe using raw user input data directly so we need to be careful - possible sql injection
-                            $value = str_replace( '\'', '', $value );
                         }
                         # TODO: LIKE may match more than we want on serialized array of numeric values - false match on numeric indices
                         $sql2 .= $wpdb->prepare( "( w.meta_key = %s AND w.meta_value LIKE %s )", $key, "%$value%" );
