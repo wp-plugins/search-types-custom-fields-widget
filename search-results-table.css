@@ -25,3 +25,7 @@ table.scpbcfw-result-table th {
     color:black;
     text-align:center;
 }
+
+table.scpbcfw-result-table td.scpbcfw-result-table-detail-numeric{
+    text-align:center;
+}

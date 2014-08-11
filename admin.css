@@ -1,0 +1,74 @@
+h4.scpbcfw-admin-heading{
+    float:left;
+    margin:5px;
+    font-size:16px;
+    font-weight:bold;
+}
+
+div.scpbcfw-admin-button{
+    background-color:#c0c0c0;
+    width:5em;
+    float:right;
+    border:2px solid black;
+    border-radius:7px;
+    text-align:center;
+    margin:5px;
+    font-size:12px;
+    font-weight:bold;
+}
+
+div.scpbcfw-admin-button:hover{
+	background-color:#ffffff;
+}
+
+div.scpbcfw-admin-button, div.scpbcfw-admin-button a{
+	cursor:help;
+}
+
+span.scpbcfw-admin-post-type{
+    font-size:16px;
+    font-weight:bold;
+    float:left;
+}
+
+div.scpbcfw-admin-display-button{
+    background-color:#c0c0c0;
+    width:5em;
+    float:right;
+    border:2px solid black;
+    border-radius:7px;
+    text-align:center;
+    margin:5px;
+    font-size:12px;
+    font-weight:bold;
+	cursor:pointer;
+}
+
+div.scpbcfw-admin-display-button:hover{
+	background-color:#ffffff;
+}
+
+div.scpbcfw-admin-option-box-container{
+    padding:5px;
+    border:2px solid gray;
+    border-radius:7px;
+    margin:5px;
+}
+
+div.scpbcfw-admin-option-box{
+    padding:10px;
+    border:1px solid gray;
+    margin:5px;
+}
+
+input.scpbcfw-admin-option-number{
+    float:right;
+    text-align:right;
+}
+
+input.scpbcfw-admin-option-checkbox{
+    float:right;
+    margin-top:5px;
+    margin-left:5px;
+}
+
