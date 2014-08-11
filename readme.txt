@@ -3,7 +3,7 @@ Contributors: Magenta Cuda
 Tags: search, custom fields
 Requires at least: 3.6
 Tested up to: 3.9
-Stable tag: 0.4.6.1
+Stable tag: 0.4.6.1.1
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -33,11 +33,16 @@ http://alttypes.wordpress.com/search-types-custom-fields-widget/
 6. A Sample Table of Post
 
 == Changelog ==
+= 0.4.6.1.1 =
+* no new features; some small enhancements, bug fixes and code maintenance
+* taxonomy items are no longer required to come before other items in the sort order
+* it is now possible to choose to display post content in the table of posts which will actually display the post excerpt
+* administrator's interface is now stylable using a .css file
 = 0.4.6.1 =
-fixed search by tags by input box bug
-added style sheet for search widget
+* fixed search by tags by input box bug
+* added style sheet for search widget
 = 0.4.6 =
-added support for sortable tables for search results.
+* added support for sortable tables for search results.
 = 0.4.5.3 =
 * added search by post author
 * added support for post type specific css files
@@ -61,11 +66,16 @@ added support for sortable tables for search results.
 * Initial release.
 
 == Upgrade Notice ==
+= 0.4.6.1.1 =
+* no new features; some small enhancements, bug fixes and code maintenance
+* taxonomy items are no longer required to be before other items in the sort order
+* it is now possible to choose to display post content in the table of posts which will actually display the post excerpt
+* administrator's interface is now stylable using a .css file
 = 0.4.6.1 =
-fixed search by tags by input box bug
-added style sheet for search widget
+* fixed search by tags by input box bug
+* added style sheet for search widget
 = 0.4.6 =
-added support for sortable tables for search results.
+* added support for sortable tables for search results.
 = 0.4.5.3 =
 * added search by post author
 * added support for post type specific css files
