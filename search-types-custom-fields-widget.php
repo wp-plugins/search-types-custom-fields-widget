@@ -565,9 +565,9 @@ EOD
                 if ( is_serialized( $result->meta_value ) ) {
                     # serialized meta_value contains multiple values so need to unpack them and process them individually
                     $unserialized = unserialize( $result->meta_value );
-                     if ( is_array( $unserialized ) ) {
+                    if ( is_array( $unserialized ) ) {
                         if ( array_reduce( $unserialized, function( $sum, $value ) {
-                            return $sum = $sum && is_scalar( $value );
+                            return $sum = $sum && ( is_array( $value ) || is_scalar( $value ) );
                         }, TRUE ) ) {
                             foreach( $unserialized as $key => $value ) {
                                 if ( $wpcf_field['type'] === 'checkboxes' ) {

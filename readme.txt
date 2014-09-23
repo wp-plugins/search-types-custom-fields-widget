@@ -3,7 +3,7 @@ Contributors: Magenta Cuda
 Tags: search, custom fields
 Requires at least: 3.6
 Tested up to: 3.9
-Stable tag: 0.4.6.1.1
+Stable tag: 0.4.6.1.2
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -33,6 +33,8 @@ http://alttypes.wordpress.com/search-types-custom-fields-widget/
 6. A Sample Table of Post
 
 == Changelog ==
+= 0.4.6.1.2 =
+* fix problem with custom field of type 'Checkboxes' with version 1.6.3 of Types
 = 0.4.6.1.1 =
 * no new features; some small enhancements, bug fixes and code maintenance
 * taxonomy items are no longer required to come before other items in the sort order
@@ -66,6 +68,8 @@ http://alttypes.wordpress.com/search-types-custom-fields-widget/
 * Initial release.
 
 == Upgrade Notice ==
+= 0.4.6.1.2 =
+* fix problem with custom field of type 'Checkboxes' with version 1.6.3 of Types
 = 0.4.6.1.1 =
 * no new features; some small enhancements, bug fixes and code maintenance
 * taxonomy items are no longer required to be before other items in the sort order
