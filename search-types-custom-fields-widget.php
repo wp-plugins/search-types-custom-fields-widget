@@ -1023,8 +1023,8 @@ EOD
                         } else if ( $wpcf_field['type'] === 'checkboxes' ) {
                             # checkboxes are tricky since the value bound to 0 means unchecked so must also check the bound value
                             $options =& $wpcf_field['data']['options'];
-                            $value = 's:' . strlen($value) .':"' .$value . '";s:' . strlen( $options[$value]['set_value'] ) . ':"'
-                                . $options[$value]['set_value'] . '";';
+                            $value = 's:' . strlen($value) .':"' .$value . '";a:1:{i:0;s:' . strlen( $options[$value]['set_value'] ) . ':"'
+                                . $options[$value]['set_value'] . '";}';
                         } else if ( $wpcf_field['type'] === 'checkbox' ) {
                             # checkbox is tricky since the value bound to 0 means unchecked so must also check the bound value
                             if ( $value ) { $value = $wpcf_field['data']['set_value']; }
