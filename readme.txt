@@ -10,6 +10,8 @@ License URI: http://www.gnu.org/licenses/gpl-2.0.html
 Search Types custom posts for posts that have user specified values for Types custom fields.
 
 == Description ==
+This plugin is no longer being actively developed. This means no new features will be added. Since, I no longer use this plugin myself I will not know of a problem unless some user reports it. If you intend to become a new user of this plugin I would recommend you try another product. If you are an existing user please be assured that I am committed to maintaining the existing feature set of this plugin for the foreseeable future.
+
 This search widget can search for [Types](http://wordpress.org/plugins/types/) custom posts, WordPress posts and pages by the value of Types custom fields, WordPress taxonomies and post content. It is designed to be used with the Types plugin only and makes use of Types' proprietary database format to generate user friendly field names and field values. The widget uses user friendly substitutions for the actual values in the database when appropriate, e.g. post title is substituted for post id in parent/child fields. Please visit the [online documentation](http://alttypes.wordpress.com/search-types-custom-fields-widget/) for more details. **This plugin works with Types 1.5.7 and requires at least PHP 5.4.** [This plugin is not compatible with the WordPress Multilingual Plugin by OnTheGoSystems.](http://wordpress.org/support/topic/incompatibility-between-my-plugin-and-wpml-multilingual)
 
 == Installation ==
