@@ -1,3 +1,20 @@
+div.scpbcfw-admin-search-fields.stcfw-highlight{
+    border-color:green;
+    background-color:white;
+}
+
+div.scpbcfw-admin-search-fields.stcfw-nohighlight{
+    border-color:red;
+    background-color:lightgray;
+}
+
+div.scpbcfw-admin-search-fields{
+    border:2px solid gray;
+    border-radius:7px;
+    padding:5px;
+    margin:5px;
+}
+
 h4.scpbcfw-admin-heading{
     float:left;
     margin:5px;
@@ -54,6 +71,9 @@ div.scpbcfw-admin-option-box-container{
     border-radius:7px;
     margin:5px;
 }
+
+div.scpbcfw-selectable-field-after{height:2px;background-color:white;}
+div.scpbcfw-selectable-field-after.scpbcfw-hover{background-color:black;}
 
 div.scpbcfw-admin-option-box{
     padding:10px;

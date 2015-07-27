@@ -1,3 +1,13 @@
+div.scpbcfw-search-post-type.stcfw-highlight,div.scpbcfw-search-fields.stcfw-highlight{
+    border-color:green;
+    background-color:white;
+}
+
+div.scpbcfw-search-post-type.stcfw-nohighlight,div.scpbcfw-search-fields.stcfw-nohighlight{
+    border-color:red;
+    background-color:lightgray;
+}
+
 form.scpbcfw-search-fields-form{
     width:95%;
     padding:10px;margin:5px;

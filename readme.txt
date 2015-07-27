@@ -2,8 +2,8 @@
 Contributors: Magenta Cuda
 Tags: search, custom fields
 Requires at least: 3.6
-Tested up to: 3.9
-Stable tag: 0.4.6.1.3
+Tested up to: 4.2
+Stable tag: 0.4.7
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -11,8 +11,9 @@ Search Types custom posts for posts that have user specified values for Types cu
 
 == Description ==
 This plugin is no longer being actively developed. This means no new features will be added. Since, I no longer use this plugin myself I will not know of a problem unless some user reports it. If you intend to become a new user of this plugin I would recommend you try another product. If you are an existing user please be assured that I am committed to maintaining the existing feature set of this plugin for the foreseeable future.
+Although, I recently (August 2015) made a new release of this plugin, this was because I am a retired software developer who really loves developing software and was bored with nothing to do. However, I do not have any plan to further develop this plugin so the previous warning is still true.
 
-This search widget can search for [Types](http://wordpress.org/plugins/types/) custom posts, WordPress posts and pages by the value of Types custom fields, WordPress taxonomies and post content. It is designed to be used with the Types plugin only and makes use of Types' proprietary database format to generate user friendly field names and field values. The widget uses user friendly substitutions for the actual values in the database when appropriate, e.g. post title is substituted for post id in parent/child fields. Please visit the [online documentation](http://alttypes.wordpress.com/search-types-custom-fields-widget/) for more details. **This plugin works with Types 1.5.7 and requires at least PHP 5.4.** [This plugin is not compatible with the WordPress Multilingual Plugin by OnTheGoSystems.](http://wordpress.org/support/topic/incompatibility-between-my-plugin-and-wpml-multilingual)
+This [search widget](http://alttypes.wordpress.com/search-types-custom-fields-widget/) can search for [Types](http://wordpress.org/plugins/types/) custom posts, WordPress posts and pages by the value of Types custom fields, WordPress taxonomies and post content. It is designed to be used with the Types plugin only and makes use of Types' proprietary database format to generate user friendly field names and field values. The widget uses user friendly substitutions for the actual values in the database when appropriate, e.g. post title is substituted for post id in parent/child fields. Please visit the [online documentation](http://alttypes.wordpress.com/search-types-custom-fields-widget/) for more details. **This plugin works with Types 1.7.7 and requires at least PHP 5.4.** [This plugin is not compatible with the WordPress Multilingual Plugin by OnTheGoSystems.](http://wordpress.org/support/topic/incompatibility-between-my-plugin-and-wpml-multilingual)
 
 == Installation ==
 1. Upload the folder "search-types-custom-fields-widget" to the "/wp-content/plugins/" directory.
@@ -35,6 +36,11 @@ http://alttypes.wordpress.com/search-types-custom-fields-widget/
 6. A Sample Table of Post
 
 == Changelog ==
+= 0.4.7 =
+* code rewritten to fix bugs, enhance security and improve software quality
+* added option to use simplified labels for select, checkboxes and radio button values
+* replaced field slug with field title
+* changed some css to prettify things
 = 0.4.6.1.3 =
 * another fix for the problem with custom field of type 'Checkboxes' with version 1.6.3 of Types
 = 0.4.6.1.2 =
@@ -72,6 +78,11 @@ http://alttypes.wordpress.com/search-types-custom-fields-widget/
 * Initial release.
 
 == Upgrade Notice ==
+= 0.4.7 =
+* code rewritten to fix bugs, enhance security and improve software quality
+* added option to use simplified labels for select, checkboxes and radio button values
+* replaced field slug with field title
+* changed some css to prettify things
 = 0.4.6.1.3 =
 * another fix for the problem with custom field of type 'Checkboxes' with version 1.6.3 of Types
 = 0.4.6.1.2 =
