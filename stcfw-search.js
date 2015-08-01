@@ -26,10 +26,13 @@ jQuery(document).ready(function(){
                     }
                     return false;
                 });
-                form.find("div.scpbcfw-search-field-values input[type='checkbox']").change(function(){
+                form.find("div.scpbcfw-search-field-values input[type='checkbox'],div.scpbcfw-search-field-values input[type='text']").change(function(){
                     var checked=false;
                     jQuery(this).parents("div.scpbcfw-search-field-values").find("input[type='checkbox']").each(function(){
                         checked=checked||jQuery(this).prop("checked");
+                    });
+                    jQuery(this).parents("div.scpbcfw-search-field-values").find("input[type='text']").each(function(){
+                        checked=checked||jQuery(this).val();
                     });
                     var container=jQuery(this).parents("div.scpbcfw-search-fields");
                     if(checked){

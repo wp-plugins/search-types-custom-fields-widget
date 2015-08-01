@@ -882,7 +882,7 @@ EOD
                 || substr_compare( $index, Search_Types_Custom_Fields_Widget::OPTIONAL_MAXIMUM_VALUE_SUFFIX, -$suffix_len ) === 0
             ) ) {
                 $index = substr( $index, 0, strlen( $index ) - $suffix_len );
-                if ( is_array( $_REQUEST[$index] ) || !array_key_exists( $index, $_REQUEST ) ) {
+                if ( !array_key_exists( $index, $_REQUEST ) || is_array( $_REQUEST[$index] ) ) {
                     $_REQUEST[$index][] = array( 'operator' => $is_min ? 'minimum' : 'maximum', 'value' => $request );
                 }
                 # kill the original request
@@ -938,9 +938,9 @@ EOD
                             }
                             if ( $sql3 ) { $sql3 .= ' AND '; }
                             if ( $is_min ) {
-                                $sql3 .= $wpdb->prepare( "( w.meta_key = %s AND w.meta_value >= %d )", $key, $value[value] );
+                                $sql3 .= $wpdb->prepare( "( w.meta_key = %s AND w.meta_value >= %d )", $key, $value['value'] );
                             } else if ( $is_max ) {
-                                $sql3 .= $wpdb->prepare( "( w.meta_key = %s AND w.meta_value <= %d )", $key, $value[value] );
+                                $sql3 .= $wpdb->prepare( "( w.meta_key = %s AND w.meta_value <= %d )", $key, $value['value'] );
                             }
                         }
                     } else if ( $wpcf_field['type'] !== 'checkbox' && !$value ) {
@@ -1176,6 +1176,8 @@ EOD;
                 if ( substr_compare( $field, 'tax-cat-', 0, 8, false ) === 0
                     || substr_compare( $field, 'tax-tag-', 0, 8, false ) === 0 ) {
                     $field = substr( $field, 8 );
+                    $labels = get_taxonomy( $field )->labels;
+                    $field = isset( $labels->singular_name ) ? $labels->singular_name : $labels->name;                    
                 } else if ( $field === 'pst-std-attachment' ) {
                     $field = 'Attachment';
                 } else if ( $field === 'pst-std-post_author' ) {
@@ -1311,6 +1313,19 @@ EOD
                         }
                         if ( array_key_exists( $post, $excerpts ) ) {
                             $label = $excerpts[$post]->post_excerpt;
+                            if ( !$label ) {
+                                # use auto generated excerpt if there is no user supplied excerpt 
+                                if ( $post_for_excerpt = get_post( $post ) ) {
+                                    if ( !post_password_required( $post ) ) {
+                                        # copied and modified from wp_trim_excerpt() of wp-includes/formatting.php
+                                        $label = $post_for_excerpt->post_content;
+                                        $label = strip_shortcodes( $label );
+                                        $label = apply_filters( 'the_content', $label );
+                                        $label = str_replace(']]>', ']]&gt;', $label);
+                                        $label = wp_trim_words( $label, 8, ' ' . '&hellip;' );
+                                    }
+                                }
+                            }
                             $td = "<td class=\"scpbcfw-result-table-detail-$field\">$label</td>";
                         }     
                     } else {
@@ -1389,11 +1404,19 @@ EOD
                                     } else if ( $wpcf_field[ 'type' ] === 'checkboxes' ) {
                                         # checkboxes are handled very differently from radio and select 
                                         # Why? seems that the radio/select way would work here also and be simpler
-                                        $current = $wpcf_field['data']['options'][$value]['title'];
-                                         if ( $wpcf_field['data']['options'][$value]['display'] === 'db' ) {
-                                            $current .= ' (' . $wpcf_field['data']['options'][$value]['set_value'] . ')';
-                                        } else if ( $wpcf_field['data']['options'][$value]['display'] === 'value' ) {
-                                            $current .= ' (' . $wpcf_field['data']['options'][$value]['display_value_selected'] . ')';
+                                        if ( isset( $option[ 'use_simplified_labels_for_select' ] ) ) {
+                                            if ( $wpcf_field[ 'data' ][ 'options' ][ $value ][ 'display' ] == 'value' ) {
+                                                $current = $wpcf_field[ 'data' ][ 'options' ][ $value ][ 'display_value_selected' ];
+                                            } else {
+                                                $current = $wpcf_field[ 'data' ][ 'options' ][ $value ][ 'title' ];
+                                            }
+                                        } else {
+                                            $current = $wpcf_field[ 'data' ][ 'options' ][ $value ][ 'title' ];
+                                             if ( $wpcf_field[ 'data' ][ 'options' ][ $value ][ 'display' ] === 'db' ) {
+                                                $current .= ' (' . $wpcf_field[ 'data' ][ 'options' ][ $value ][ 'set_value' ] . ')';
+                                            } else if ( $wpcf_field[ 'data' ][ 'options' ][ $value ][ 'display' ] === 'value' ) {
+                                                $current .= ' (' . $wpcf_field[ 'data' ][ 'options' ][ $value ][ 'display_value_selected' ] . ')';
+                                            }
                                         }
                                     } else if ( $wpcf_field['type'] === 'checkbox' ) {
                                         if ( $wpcf_field['data']['display'] === 'db' ) {
