@@ -60,7 +60,7 @@ function stcfwInitialize(target){
 jQuery(document).ready(function(){
     // run only on widgets admin page
     if(location.pathname.indexOf("/widgets.php")===-1){return;}
-    stcfwInitialize(jQuery("body"));
+    jQuery("div.widget-content").has("div.scpbcfw-admin-button").each(function(){stcfwInitialize(this);});
     // handle AJAX refresh of the search form
     var container=jQuery("div.widgets-sortables");
     // What if WordPress changes the classname of the widget container? The plugin will need to be upgraded

@@ -3,7 +3,7 @@ Contributors: Magenta Cuda
 Tags: search, custom fields
 Requires at least: 3.6
 Tested up to: 4.2
-Stable tag: 0.4.7.1
+Stable tag: 0.4.7.1.1
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -35,6 +35,8 @@ http://alttypes.wordpress.com/search-types-custom-fields-widget/
 6. A Sample Table of Post
 
 == Changelog ==
+= 0.4.7.1.1 =
+* fix javascript bug
 = 0.4.7.1 =
 * fix bug where javascript handlers were not always installed when widget was dynamically inserted or replaced in administrator's widget page
 * use auto generated excerpt if no user supplied excerpt
@@ -83,6 +85,8 @@ http://alttypes.wordpress.com/search-types-custom-fields-widget/
 * Initial release.
 
 == Upgrade Notice ==
+= 0.4.7.1.1 =
+* fix javascript bug
 = 0.4.7.1 =
 * fix bug where javascript handlers were not always installed when widget was dynamically inserted or replaced in administrator's widget page
 * use auto generated excerpt if no user supplied excerpt
