@@ -3,7 +3,7 @@ Contributors: Magenta Cuda
 Tags: search, custom fields
 Requires at least: 3.6
 Tested up to: 4.2
-Stable tag: 0.4.7.1.1
+Stable tag: 0.4.8
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -35,6 +35,10 @@ http://alttypes.wordpress.com/search-types-custom-fields-widget/
 6. A Sample Table of Post
 
 == Changelog ==
+= 0.4.8 =
+* Added localization - use _e() and __(), provide .pot file.
+* Code rewritten to improve software quality.
+* Tested up to WordPress 4.3 Release Candidate (4.3-RC2-33585).
 = 0.4.7.1.1 =
 * fix javascript bug
 = 0.4.7.1 =
@@ -85,6 +89,10 @@ http://alttypes.wordpress.com/search-types-custom-fields-widget/
 * Initial release.
 
 == Upgrade Notice ==
+= 0.4.8 =
+* Added localization - use _e() and __(), provide .pot file.
+* Code rewritten to improve software quality.
+* Tested up to WordPress 4.3 Release Candidate (4.3-RC2-33585).
 = 0.4.7.1.1 =
 * fix javascript bug
 = 0.4.7.1 =
