@@ -28,14 +28,19 @@ class Search_Types_Custom_Fields_Widget extends WP_Widget {
     const OPTIONAL_MINIMUM_VALUE_SUFFIX = '-stcfw-minimum-value';      # suffix to append to optional minimum/maximum value text 
     const OPTIONAL_MAXIMUM_VALUE_SUFFIX = '-stcfw-maximum-value';      #     inputs for a numeric search field
     const GET_FORM_FOR_POST_TYPE = 'get_form_for_post_type';
-    const PARENT_OF = 'For ';                                          # label for parent of relationship
-    const CHILD_OF = 'Of ';                                            # label for child of relationship
-	public function __construct() {
+    const LANGUAGE_DOMAIN = 'search-types-custom-fields-widget';       # for .pot file
+    
+    public static $PARENT_OF = 'For ';                                 # label for parent of relationship
+    public static $CHILD_OF = 'Of ';                                   # label for child of relationship
+    
+	public function __construct( ) {
 		parent::__construct(
             'search_types_custom_fields_widget',
-            __( 'Search Types Custom Fields' ),
-            [ 'classname' => 'search_types_custom_fields_widget', 'description' => __( "Search Types Custom Fields" ) ]
+            __( 'Search Types Custom Fields', self::LANGUAGE_DOMAIN ),
+            [ 'classname' => 'search_types_custom_fields_widget', 'description' => __( "Search Types Custom Fields", self::LANGUAGE_DOMAIN ) ]
         );
+        self::$PARENT_OF = __( 'For ', self::LANGUAGE_DOMAIN );
+        self::$CHILD_OF  = __( 'Of ',  self::LANGUAGE_DOMAIN );
 	}
 
     # widget() emits a form to select a post type which sends an AJAX request for the search form for the selected post type
@@ -51,11 +56,11 @@ class Search_Types_Custom_Fields_Widget extends WP_Widget {
     value="<?php echo $this->option_name; ?>">
 <input id="search_types_custom_fields_widget_number" name="search_types_custom_fields_widget_number" type="hidden"
     value="<?php echo $this->number; ?>">
-<h2>Search:</h2>
+<h2><?php _e( 'Search:', self::LANGUAGE_DOMAIN ); ?></h2>
 <div class="scpbcfw-search-post-type">
-<h3>post type:</h3>
+<h3><?php _e( 'post type:', self::LANGUAGE_DOMAIN ); ?></h3>
 <select id="post_type" name="post_type" class="post_type scpbcfw-search-select-post-type" required>
-<option value="no-selection">--select post type--</option>
+<option value="no-selection"><?php _e( '--select post type--', self::LANGUAGE_DOMAIN ); ?></option>
 <?php
         $results = $wpdb->get_results( <<<EOD
 SELECT post_type, COUNT(*) count FROM $wpdb->posts WHERE post_status = "publish" GROUP BY post_type ORDER BY count DESC
@@ -83,11 +88,11 @@ EOD
 <div id="scpbcfw-search-fields-submit-container" style="display:none">
 <div class="scpbcfw-search-fields-option-box">
 <div class="scpbcfw-search-fields-and-or-box">
-Results should satisfy<br> 
-<input type="radio" name="search_types_custom_fields_and_or" value="and" checked><strong>All</strong>
+<?php _e( 'Results should satisfy', self::LANGUAGE_DOMAIN ); ?><br> 
+<input type="radio" name="search_types_custom_fields_and_or" value="and" checked><strong><?php _e( 'All', self::LANGUAGE_DOMAIN ); ?></strong>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-<input type="radio" name="search_types_custom_fields_and_or" value="or"><strong>Any</strong></br>
-of the search conditions.
+<input type="radio" name="search_types_custom_fields_and_or" value="or"><strong><?php _e( 'Any', self::LANGUAGE_DOMAIN ); ?></strong></br>
+<?php _e( 'of the search conditions.', self::LANGUAGE_DOMAIN ); ?>
 </div>
 <?php
         if ( $instance['enable_table_view_option'] === 'table view option enabled' ) {
@@ -95,7 +100,7 @@ of the search conditions.
 <hr>
 <div class="scpbcfw-search-fields-checkbox-box">
 <input type="checkbox" name="search_types_custom_fields_show_using_macro" class="scpbcfw-search-fields-checkbox" value="use macro">
-Show search results in table format:
+<?php _e( 'Show search results in table format:', self::LANGUAGE_DOMAIN ); ?>
 </div>
 <?php
         }
@@ -103,7 +108,7 @@ Show search results in table format:
 </div>
 <div class="scpbcfw-search-fields-submit-box">
 <input id="scpbcfw-search-fields-nonce" type="hidden" value="<?php echo wp_create_nonce( Search_Types_Custom_Fields_Widget::GET_FORM_FOR_POST_TYPE ); ?>">
-<input id="scpbcfw-search-fields-submit" type="submit" value="Start Search" disabled>
+<input id="scpbcfw-search-fields-submit" type="submit" value="<?php _e( 'Start Search', self::LANGUAGE_DOMAIN ); ?>" disabled>
 &nbsp;&nbsp;
 </div>
 </div>
@@ -125,9 +130,9 @@ Show search results in table format:
         $wpcf_fields = get_option( 'wpcf-fields',       [ ] );
 ?>
 <div class="scpbcfw-admin-button">
-<a href="http://alttypes.wordpress.com/#administrator" target="_blank">Help</a>
+<a href="http://alttypes.wordpress.com/#administrator" target="_blank"><?php _e( 'Help', self::LANGUAGE_DOMAIN ); ?></a>
 </div>
-<h4 class="scpbcfw-admin-heading">Select Fields for:</h4>
+<h4 class="scpbcfw-admin-heading"><?php _e( 'Select Fields for:', self::LANGUAGE_DOMAIN ); ?></h4>
 <p style="clear:both;margin:0px;">
 <?php
         # use all Types custom post types and the WordPress built in "post" and "page"
@@ -156,7 +161,7 @@ EOD
 ?>
 <div class="scpbcfw-admin-search-fields">
 <span class="scpbcfw-admin-post-type"><?php echo "$name ($type->count)"; ?></span>
-<div class="scpbcfw-admin-display-button">Open</div>
+<div class="scpbcfw-admin-display-button"><?php _e( 'Open', self::LANGUAGE_DOMAIN ); ?></div>
 <div style="clear:both;"></div>
 <div class="scpbcfw-search-field-values" style="display:none;">
 <?php
@@ -180,8 +185,8 @@ EOD
             $the_taxonomies = [ ];
             foreach ( $db_taxonomies as &$db_taxonomy ) {
                 if ( $db_taxonomy->post_type != $name ) { continue; }
-                $wp_taxonomy = $wp_taxonomies[$db_taxonomy->taxonomy];
-                $the_taxonomies[( $wp_taxonomy->hierarchical ? 'tax-cat-' : 'tax-tag-' ) . $wp_taxonomy->name] =& $db_taxonomy;
+                $wp_taxonomy = $wp_taxonomies[ $db_taxonomy->taxonomy ];
+                $the_taxonomies[ ( $wp_taxonomy->hierarchical ? 'tax-cat-' : 'tax-tag-' ) . $wp_taxonomy->name ] = $db_taxonomy;
             }
             unset( $db_taxonomy );
             # now do types custom fields, post content and author
@@ -206,10 +211,9 @@ EOD
             foreach ( $fields as $meta_key => &$field ) {
                 $field_name = substr( $meta_key, 5 );
                 if ( array_key_exists( $field_name, $wpcf_fields ) && in_array( $field_name, $fields_for_type ) ) {
-                    $wpcf_field =& $wpcf_fields[$field_name];
-                    $field->label = $wpcf_field['name'];
-                    $field->large = in_array( $wpcf_field['type'], array( 'textarea', 'wysiwyg' ) );
-                    unset( $wpcf_field );
+                    $wpcf_field = $wpcf_fields[ $field_name ];
+                    $field->label = $wpcf_field[ 'name' ];
+                    $field->large = in_array( $wpcf_field[ 'type' ], [ 'textarea', 'wysiwyg' ] );
                 } else {
                     $field = NULL;   # not a valid Types custom field so tag it for skipping.
                 }
@@ -225,7 +229,7 @@ EOD
             foreach ( $results as $result ) {
                 $post_type = substr( $result->meta_key, 14, strlen( $result->meta_key ) - 17 );
                 $fields[$result->meta_key] = (object) array(
-                    'label' => self::CHILD_OF . ( $post_type === 'post' || $post_type === 'page' ? $post_type
+                    'label' => self::$CHILD_OF . ( $post_type === 'post' || $post_type === 'page' ? $post_type
                         : $wpcf_types[$post_type]['labels']['name'] ), 
                     'count' => $result->count
                 );
@@ -241,25 +245,25 @@ EOD
 EOD
             , OBJECT );
             foreach ( $results as $result ) {
-                $fields["inverse_{$result->post_type}_{$result->meta_key}"] = (object) array(
-                    'label' => self::PARENT_OF . ( $result->post_type === 'post' || $result->post_type === 'page'
-                        ? $result->post_type : $wpcf_types[$result->post_type]['labels']['name'] ), 
+                $fields["inverse_{$result->post_type}_{$result->meta_key}"] = (object) [
+                    'label' => self::$PARENT_OF . ( $result->post_type === 'post' || $result->post_type === 'page'
+                        ? $result->post_type : $wpcf_types[ $result->post_type ][ 'labels' ][ 'name' ] ), 
                     'count' => $result->count
-                );
+                ];
             }
             # setup post content entry
-            $fields['pst-std-post_content'] = (object) array( 'label' => 'Post Content', 'count' => $type->count );
-            $fields['pst-std-attachment'] = (object) array( 'label' => 'Attachment', 'count' => $wpdb->get_var( <<<EOD
+            $fields[ 'pst-std-post_content' ] = (object) [ 'label' => 'Post Content', 'count' => $type->count ];
+            $fields[ 'pst-std-attachment' ] = (object) [ 'label' => 'Attachment', 'count' => $wpdb->get_var( <<<EOD
                 SELECT COUNT( DISTINCT a.post_parent ) FROM $wpdb->posts a, $wpdb->posts p
                     WHERE a.post_type = "attachment" AND a.post_parent = p.ID AND p.post_type = "$name" AND p.post_status = "publish"
 EOD
-            ) );
+            ) ];
             #setup post author entry
-            $fields['pst-std-post_author']  = (object) array( 'label' => 'Author', 'count' => $wpdb->get_var( <<<EOD
+            $fields['pst-std-post_author']  = (object) [ 'label' => 'Author', 'count' => $wpdb->get_var( <<<EOD
                 SELECT COUNT(*) FROM $wpdb->posts p
                     WHERE p.post_type = "$name" AND p.post_status = "publish" AND p.post_author IS NOT NULL
 EOD
-            ) );
+            ) ];
             # remove all invalid custom fields.
             $fields = array_filter( $fields );
             $current = array_merge( array_keys( $the_taxonomies ), array_keys( $fields ) );
@@ -276,8 +280,8 @@ EOD
 <?php
                 if ( substr_compare( $field_name, 'tax-tag-', 0, 8 ) ==0 || substr_compare( $field_name, 'tax-cat-', 0, 8 ) == 0 ) {
                     $tax_name = $field_name;
-                    $db_taxonomy =& $the_taxonomies[$tax_name];
-                    $wp_taxonomy = $wp_taxonomies[$db_taxonomy->taxonomy];
+                    $db_taxonomy = $the_taxonomies[ $tax_name ];
+                    $wp_taxonomy = $wp_taxonomies[ $db_taxonomy->taxonomy ];
                     $tax_label = ( $wp_taxonomy->hierarchical ) ? ' (category)' : ' (tag)';
 ?>
     <input type="checkbox"
@@ -298,7 +302,7 @@ EOD
                 } else {   # if ( substr_compare( $field_name, 'tax-tag-', 0, 8 ) ==0 || substr_compare( $field_name, 'tax-cat-', 0, 8 ) == 0 ) {
                     # display a field with checkboxes
                     $meta_key = $field_name;
-                    $field =& $fields[$meta_key];
+                    $field = $fields[ $meta_key ];
 ?>
     <input type="checkbox"
         class="scpbcfw-selectable-field"
@@ -338,7 +342,7 @@ EOD
     class="scpbcfw-admin-option-number"
     value="<?php echo !empty( $instance['maximum_number_of_items'] ) ? $instance['maximum_number_of_items'] : 16; ?>"
     size="4">
-Maximum number of items to display per custom field:
+<?php _e( 'Maximum number of items to display per custom field:', self::LANGUAGE_DOMAIN ); ?>
 <div style="clear:both;"></div>
 </div>
 <div class="scpbcfw-admin-option-box">
@@ -347,7 +351,7 @@ Maximum number of items to display per custom field:
     name="<?php echo $this->get_field_name( 'set_is_search' ); ?>"
     class="scpbcfw-admin-option-checkbox"
     value="is search" <?php if ( isset( $instance['set_is_search'] ) ) { echo 'checked'; } ?>>
-Display search results using excerpts (if it is supported by your theme):
+<?php _e( 'Display search results using excerpts (if it is supported by your theme):', self::LANGUAGE_DOMAIN ); ?>
 <div style="clear:both;"></div>
 </div>
 <div class="scpbcfw-admin-option-box">
@@ -356,7 +360,7 @@ Display search results using excerpts (if it is supported by your theme):
     name="<?php echo $this->get_field_name( 'use_simplified_labels_for_select' ); ?>"
     class="scpbcfw-admin-option-checkbox"
     value="use simplified labels" <?php if ( isset( $instance[ 'use_simplified_labels_for_select' ] ) ) { echo 'checked'; } ?>>
-Use simplified labels for the values of select, checkboxes and radio button fields:
+<?php _e( 'Use simplified labels for the values of select, checkboxes and radio button fields:', self::LANGUAGE_DOMAIN ); ?>
 <div style="clear:both;"></div>
 </div><div class="scpbcfw-admin-option-box">
 <input type="checkbox"
@@ -365,7 +369,7 @@ Use simplified labels for the values of select, checkboxes and radio button fiel
     class="scpbcfw-admin-option-checkbox scpbcfw-enable-table-view-option"
     value="table view option enabled"
     <?php if ( !$instance || isset( $instance['enable_table_view_option'] ) ) { echo 'checked'; } ?>>
-Enable option to display search results using a table of posts:
+<?php _e( 'Enable option to display search results using a table of posts:', self::LANGUAGE_DOMAIN ); ?>
 <div style="clear:both;"></div>
 </div>
 <div class="scpbcfw-admin-option-box">
@@ -375,9 +379,9 @@ Enable option to display search results using a table of posts:
     class="scpbcfw-admin-option-number scpbcfw-search-table-width"
     <?php if ( !empty( $instance['search_table_width'] ) ) { echo "value=\"$instance[search_table_width]\""; } ?>
     <?php if ( $instance && !isset( $instance['enable_table_view_option'] ) ) { echo 'disabled'; } ?>
-    placeholder="from css"
+    placeholder="<?php _e( 'from css', self::LANGUAGE_DOMAIN ); ?>"
     size="5">
-Width in pixels of the table of search results:
+<?php _e( 'Width in pixels of the table of search results:', self::LANGUAGE_DOMAIN ); ?>
 <div style="clear:both;"></div>
 </div>
 </div>
@@ -419,30 +423,38 @@ Width in pixels of the table of search results:
     }
     
 }   # class Search_Types_Custom_Fields_Widget extends WP_Widget {
+    
+add_action( 'plugins_loaded', function( ) {
+    load_plugin_textdomain( Search_Types_Custom_Fields_Widget::LANGUAGE_DOMAIN, FALSE, dirname( plugin_basename( __FILE__ ) ) . '/languages' );
+} );
 
-add_action( 'widgets_init', function() {
+add_action( 'widgets_init', function( ) {
     register_widget( 'Search_Types_Custom_Fields_Widget' );
 } );
 
-if ( is_admin() ) {
-    add_action( 'admin_enqueue_scripts', function() {
+if ( is_admin( ) ) {
+    add_action( 'admin_enqueue_scripts', function( ) {
         wp_enqueue_style(  'stcfw-admin', plugins_url( 'stcfw-admin.css', __FILE__ ) );
         wp_enqueue_script( 'stcfw-admin', plugins_url( 'stcfw-admin.js',  __FILE__ ), [ 'jquery' ]  );
+        wp_localize_script( 'stcfw-admin', 'stcfwAdminTranslations', [
+            'open' => __( 'Open', Search_Types_Custom_Fields_Widget::LANGUAGE_DOMAIN ),
+            'close' => __( 'Close', Search_Types_Custom_Fields_Widget::LANGUAGE_DOMAIN )
+        ] );
         wp_enqueue_script( 'jquery-ui-draggable' );
         wp_enqueue_script( 'jquery-ui-droppable' );
     } );
-    add_action( 'wp_ajax_' . Search_Types_Custom_Fields_Widget::GET_FORM_FOR_POST_TYPE, function() {
+    add_action( 'wp_ajax_' . Search_Types_Custom_Fields_Widget::GET_FORM_FOR_POST_TYPE, function( ) {
         do_action( 'wp_ajax_nopriv_' . Search_Types_Custom_Fields_Widget::GET_FORM_FOR_POST_TYPE );
     } );
-    add_action( 'wp_ajax_nopriv_' . Search_Types_Custom_Fields_Widget::GET_FORM_FOR_POST_TYPE, function() {
+    add_action( 'wp_ajax_nopriv_' . Search_Types_Custom_Fields_Widget::GET_FORM_FOR_POST_TYPE, function( ) {
         # build the search form for the post type in the AJAX request
         global $wpdb;
-        if ( !isset( $_POST['stcfw_get_form_nonce'] ) || !wp_verify_nonce( $_POST['stcfw_get_form_nonce'],
+        if ( !isset( $_POST[ 'stcfw_get_form_nonce' ] ) || !wp_verify_nonce( $_POST[ 'stcfw_get_form_nonce' ],
             Search_Types_Custom_Fields_Widget::GET_FORM_FOR_POST_TYPE ) ) {
             error_log( '##### action:wp_ajax_nopriv_' . Search_Types_Custom_Fields_Widget::GET_FORM_FOR_POST_TYPE . ':nonce:die' );
             die;
         }
-        if ( $_REQUEST['post_type'] === 'no-selection' ) {
+        if ( $_REQUEST[ 'post_type' ] === 'no-selection' ) {
             # this is the no selection place holder so do nothing
             die;
         }
@@ -451,9 +463,9 @@ if ( is_admin() ) {
 <div class="scpbcfw-search-fields-head">
 <div id="scpbcfw-search-fields-help">
 <a href="http://alttypes.wordpress.com/#user"
-    target="_blank">Help</a>
+    target="_blank"><?php _e( 'Help', Search_Types_Custom_Fields_Widget::LANGUAGE_DOMAIN ); ?></a>
 </div>
-<h4 class="scpbcfw-search-fields-title">Search Conditions:</h4>
+<h4 class="scpbcfw-search-fields-title"><?php _e( 'Search Conditions:', Search_Types_Custom_Fields_Widget::LANGUAGE_DOMAIN ); ?></h4>
 <br style="clear:both;">
 </div>
 <?php
@@ -468,18 +480,18 @@ SELECT x.taxonomy, r.term_taxonomy_id, t.name, COUNT(*) count
     WHERE r.term_taxonomy_id = x.term_taxonomy_id AND x.term_id = t.term_id AND r.object_id = p.ID AND p.post_type = %s
     GROUP BY x.taxonomy, r.term_taxonomy_id ORDER BY x.taxonomy, r.term_taxonomy_id
 EOD
-            , $_REQUEST['post_type'] ), OBJECT );
+            , $_REQUEST[ 'post_type' ] ), OBJECT );
         $taxonomies = get_taxonomies( '', 'objects' );
         # restructure the results for displaying by taxonomy
         $terms = [ ];
         foreach ( $results as $result ) {
-            $taxonomy = $taxonomies[$result->taxonomy];
+            $taxonomy = $taxonomies[ $result->taxonomy ];
             $tax_type = ( $taxonomy->hierarchical ) ? 'tax-cat-' : 'tax-tag-';
             if ( !in_array( $tax_type . $taxonomy->name, $selected ) ) {
                 continue;
             }
-            $terms[$result->taxonomy]['values'][$result->term_taxonomy_id]['name' ] = $result->name;
-            $terms[$result->taxonomy]['values'][$result->term_taxonomy_id]['count'] = $result->count;
+            $terms[ $result->taxonomy ][ 'values' ][ $result->term_taxonomy_id ][ 'name' ]  = $result->name;
+            $terms[ $result->taxonomy ][ 'values' ][ $result->term_taxonomy_id ][ 'count' ] = $result->count;
         }
         # get all meta_values for the selected custom fields in the selected post type
         if ( $selected_imploded = array_filter( $selected, function( $v ) { return strpos( $v, '_wpcf_belongs_' ) !== 0; } ) ) {
@@ -492,7 +504,7 @@ EOD
             $wpcf_fields = get_option( 'wpcf-fields', [ ] );
             # prepare the results for use in checkboxes - need value, count of value and field labels
             foreach ( $results as $result ) {
-                $wpcf_field =& $wpcf_fields[substr( $result->meta_key, 5 )];
+                $wpcf_field = $wpcf_fields[ substr( $result->meta_key, 5 ) ];
                 # skip false values except for single checkbox
                 if ( $wpcf_field['type'] !== 'checkbox' && !$result->meta_value ) {
                     continue;
@@ -558,7 +570,7 @@ EOD
                     $post_type = substr( $parent, 14, strlen( $parent ) - 17 );
                     $fields[$parent] = [
                         'type' => 'child_of',
-                        'label' => Search_Types_Custom_Fields_Widget::CHILD_OF
+                        'label' => Search_Types_Custom_Fields_Widget::$CHILD_OF
                             . ( $post_type === 'post' || $post_type === 'page' ? $post_type : $wpcf_types[$post_type]['labels']['name'] ), 
                         'values' => array_reduce( $selected_results, function( $new_results, $result ) {
                                 $new_results[$result->meta_value] = $result->count;
@@ -588,9 +600,9 @@ EOD
                 if ( $selected_results = array_filter( $results, function( $result ) use ( $post_type ) { 
                     return $result->post_type == $post_type; 
                 } ) ) {
-                    $fields["inverse_{$post_type}_{$selected_parent_of}"] = [
+                    $fields[ "inverse_{$post_type}_{$selected_parent_of}" ] = [
                         'type' => 'parent_of',
-                        'label' => Search_Types_Custom_Fields_Widget::PARENT_OF
+                        'label' => Search_Types_Custom_Fields_Widget::$PARENT_OF
                             . ( $post_type === 'post' || $post_type === 'page' ? $post_type : $wpcf_types[$post_type]['labels']['name'] ), 
                         'values' => array_reduce( $selected_results, function( $new_results, $result ) {
                                 $new_results[$result->post_id] = $result->count;
@@ -601,25 +613,25 @@ EOD
             }
         }   # if ( $selected_parent_of = array_filter( $selected, function( $v ) { return strpos( $v, 'inverse_' ) === 0; } ) ) {
         if ( in_array( 'pst-std-post_content', $selected ) ) {
-            $fields['pst-std-post_content'] = [ 'type' => 'textarea',   'label' => 'Post Content' ];
+            $fields[ 'pst-std-post_content' ] = [ 'type' => 'textarea',   'label' => 'Post Content' ];
         }
         if ( in_array( 'pst-std-attachment', $selected ) ) {
-            $fields['pst-std-attachment']   = [ 'type' => 'attachment', 'label' => 'Attachment'   ];
+            $fields[ 'pst-std-attachment' ]   = [ 'type' => 'attachment', 'label' => 'Attachment'   ];
         }
         if ( in_array( 'pst-std-post_author', $selected ) ) {
-            $fields['pst-std-post_author']  = [ 'type' => 'author',     'label' => 'Author'       ];
+            $fields[ 'pst-std-post_author' ]  = [ 'type' => 'author',     'label' => 'Author'       ];
         }
         $posts = NULL;
         foreach ( $selected as $selection ) {
             if ( substr_compare( $selection, 'tax-cat-', 0, 8 ) === 0 || substr_compare( $selection, 'tax-tag-', 0, 8 ) === 0 ) {
                 # do a taxonomy
                 $tax_name = substr( $selection, 8 );
-                $values =& $terms[$tax_name];
-                $taxonomy = $taxonomies[$tax_name];
+                $values = $terms[ $tax_name ];
+                $taxonomy = $taxonomies[ $tax_name ];
 ?>
 <div class="scpbcfw-search-fields stcfw-nohighlight">
 <span class="scpbcfw-search-fields-field-label"><?php echo $taxonomy->label ?>:</span>
-<div class="scpbcfw-display-button">Open</div>
+<div class="scpbcfw-display-button"><?php _e( 'Open', Search_Types_Custom_Fields_Widget::LANGUAGE_DOMAIN ); ?></div>
 <div style="clear:both;"></div>
 <div class="scpbcfw-search-field-values" style="display:none;">
 <?php
@@ -639,7 +651,7 @@ EOD
 <input type="text"
     id="<?php echo $tax_type . $taxonomy->name . Search_Types_Custom_Fields_Widget::OPTIONAL_TEXT_VALUE_SUFFIX; ?>"
     name="<?php echo $tax_type . $taxonomy->name . Search_Types_Custom_Fields_Widget::OPTIONAL_TEXT_VALUE_SUFFIX; ?>"
-    class="scpbcfw-search-fields-for-input" placeholder="--Enter New Search Value--">
+    class="scpbcfw-search-fields-for-input" placeholder="<?php _e( '--Enter New Search Value--', Search_Types_Custom_Fields_Widget::LANGUAGE_DOMAIN ); ?>">
 <?php
                 }
 ?>
@@ -649,19 +661,22 @@ EOD
             } else {   # if ( substr_compare( $selection, 'tax-cat-', 0, 8 ) === 0 || substr_compare( $selection, 'tax-tag-', 0, 8 ) === 0 ) {
                 # do a custom field, post_content or author
                 $meta_key = $selection;
-                $field =& $fields[$meta_key];
-                $wpcf_field =& $wpcf_fields[substr( $meta_key, 5 )];
+                $field = $fields[ $meta_key ];
+                $field_type = $field[ 'type' ];
+                $wpcf_field = substr_compare( $meta_key, 'wpcf-', 0, 5 ) === 0 ? $wpcf_fields[ substr( $meta_key, 5 ) ] : NULL;
+                $wpcf_field_data = $wpcf_field && array_key_exists( 'data', $wpcf_field ) ? $wpcf_field[ 'data' ] : NULL;
+                $wpcf_field_data_options = $wpcf_field_data && array_key_exists( 'options', $wpcf_field_data ) ? $wpcf_field_data[ 'options' ] : NULL;
 ?>
 <div class="scpbcfw-search-fields stcfw-nohighlight">
-<span class="scpbcfw-search-fields-field-label"><?php echo $field['label'] ?>:</span>
-<div class="scpbcfw-display-button">Open</div>
+<span class="scpbcfw-search-fields-field-label"><?php echo $field[ 'label' ] ?>:</span>
+<div class="scpbcfw-display-button"><?php _e( 'Open', Search_Types_Custom_Fields_Widget::LANGUAGE_DOMAIN ); ?></div>
 <div style="clear:both;"></div>
 <div class="scpbcfw-search-field-values" style="display:none;">
 <?php
-                if ( $field['type'] == 'textarea' || $field['type'] == 'wysiwyg' ) {
+                if ( $field_type === 'textarea' || $field_type === 'wysiwyg' ) {
 ?>
 <input id="<?php echo $meta_key ?>" name="<?php echo $meta_key ?>" class="scpbcfw-search-fields-for-input" type="text"
-    placeholder="--Enter Search Value--">
+    placeholder="<?php _e( '--Enter Search Value--', Search_Types_Custom_Fields_Widget::LANGUAGE_DOMAIN ); ?>">
 </div>
 </div>
 <?php
@@ -706,67 +721,69 @@ EOD
                 }   # if ( $meta_key === 'pst-std-post_author' ) {
                 # now output the checkboxes
                 $number = -1;
-                foreach ( $field['values'] as $value => $count ) {
-                    if ( ++$number == $SQL_LIMIT ) { break; }
-                    if ( $field['type'] == 'child_of' || $field['type'] == 'parent_of' ) {
+                foreach ( $field[ 'values' ] as $value => $count ) {
+                    if ( ++$number == $SQL_LIMIT ) {
+                        break;
+                    }
+                    if ( $field_type === 'child_of' || $field_type === 'parent_of' ) {
                         # for child of and parent of use post title instead of post id for label
                         if ( $posts === NULL ) {
                             $posts = $wpdb->get_results( "SELECT ID, post_type, post_title FROM $wpdb->posts ORDER BY ID", OBJECT_K );
                         }    
-                        $label = $posts[$value]->post_title;
-                    } else if ( $field['type'] === 'radio' ) {
+                        $label = $posts[ $value ]->post_title;
+                    } else if ( $field_type === 'radio' ) {
                         # for radio replace option key with something more user friendly
+                        $wpcf_field_data_options_value = $wpcf_field_data_options[ $value ];
                         if ( isset( $option[ 'use_simplified_labels_for_select' ] ) ) {
-                            $label = $wpcf_field[ 'data' ][ 'display' ] === 'value' ? $wpcf_field[ 'data' ][ 'options' ][ $value ][ 'display_value' ]
-                                : $wpcf_field[ 'data' ][ 'options' ][ $value ][ 'title' ];
+                            $label = $wpcf_field_data[ 'display' ] === 'value' ? $wpcf_field_data_options_value[ 'display_value' ]
+                                : $wpcf_field_data_options_value[ 'title' ];
                         } else {
-                            $label = $wpcf_field[ 'data' ][ 'options' ][ $value ][ 'title' ]
-                                . ( $wpcf_field[ 'data' ][ 'display' ] == 'value'
-                                    ? ( '(' . $wpcf_field[ 'data' ][ 'options' ][ $value ][ 'display_value' ] . ')' )
-                                    : ( '(' . $wpcf_field[ 'data' ][ 'options' ][ $value ][ 'value' ] . ')' ) );
+                            $label = $wpcf_field_data_options_value[ 'title' ] . ( $wpcf_field_data[ 'display' ] == 'value'
+                                ? ( '(' . $wpcf_field_data_options_value[ 'display_value' ] . ')' )
+                                : ( '(' . $wpcf_field_data_options_value[ 'value' ] . ')' ) );
                         }
-                    } else if ( $field['type'] === 'select' ) {
+                    } else if ( $field_type === 'select' ) {
                         # for select replace option key with something more user friendly
+                        $wpcf_field_data_options_value = $wpcf_field_data_options[ $value ]; 
                         if ( isset( $option[ 'use_simplified_labels_for_select' ] ) ) {
-                            $label = $wpcf_field[ 'data' ][ 'options' ][ $value ][ 'title' ];
+                            $label = $wpcf_field_data_options_value[ 'title' ];
                         } else {
-                            $label = $wpcf_field[ 'data' ][ 'options' ][ $value ][ 'value' ]
-                                . '(' . $wpcf_field[ 'data' ][ 'options' ][ $value ][ 'title' ] . ')';
+                            $label = $wpcf_field_data_options_value[ 'value' ] . '(' . $wpcf_field_data_options_value[ 'title' ] . ')';
                         }
-                    } else if ( $field[ 'type' ] === 'checkboxes' ) {
+                    } else if ( $field_type === 'checkboxes' ) {
                         # checkboxes are handled very differently from radio and select 
                         # Why? seems that the radio/select way would work here also and be simpler
+                        $wpcf_field_data_options_value = $wpcf_field_data_options[ $value ];
                         if ( isset( $option[ 'use_simplified_labels_for_select' ] ) ) {
-                            if ( $wpcf_field[ 'data' ][ 'options' ][ $value ][ 'display' ] == 'value' ) {
-                                $label = $wpcf_field[ 'data' ][ 'options' ][ $value ][ 'display_value_selected' ];
+                            if ( $wpcf_field_data_options_value[ 'display' ] == 'value' ) {
+                                $label = $wpcf_field_data_options_value[ 'display_value_selected' ];
                             } else {
-                                $label = $wpcf_field[ 'data' ][ 'options' ][ $value ][ 'title' ];
+                                $label = $wpcf_field_data_options_value[ 'title' ];
                             }
                         } else {
-                            $label = $wpcf_field[ 'data' ][ 'options' ][ $value ][ 'title' ];
-                             if ( $wpcf_field[ 'data' ][ 'options' ][ $value ][ 'display' ] == 'db' ) {
-                                $label .= ' (' . $wpcf_field[ 'data' ][ 'options' ][ $value ][ 'set_value' ] . ')';
-                            } else if ( $wpcf_field[ 'data' ][ 'options' ][ $value ][ 'display' ] == 'value' ) {
-                                $label .= ' (' . $wpcf_field[ 'data' ][ 'options' ][ $value ][ 'display_value_selected' ] . ')';
+                            $label = $wpcf_field_data_options_value[ 'title' ];
+                             if ( $wpcf_field_data_options_value[ 'display' ] == 'db' ) {
+                                $label .= ' (' . $wpcf_field_data_options_value[ 'set_value' ] . ')';
+                            } else if ( $wpcf_field_data_options_value[ 'display' ] == 'value' ) {
+                                $label .= ' (' . $wpcf_field_data_options_value[ 'display_value_selected' ] . ')';
                             }
                         }
-                    } else if ( $field['type'] === 'checkbox' ) {
-                        if ( $wpcf_field['data']['display'] == 'db' ) {
+                    } else if ( $field_type === 'checkbox' ) {
+                        if ( $wpcf_field_data[ 'display' ] === 'db' ) {
                             $label = $value;
                         } else {
                             if ( $value ) {
-                                $label = $wpcf_field['data']['display_value_selected'];
+                                $label = $wpcf_field_data[ 'display_value_selected' ];
                             } else {
-                                $label = $wpcf_field['data']['display_value_not_selected'];
+                                $label = $wpcf_field_data[ 'display_value_not_selected' ];
                             }
                         }
-                    } else if ( $field['type'] === 'image' || $field['type'] === 'file' || $field['type'] === 'audio'
-                        || $field['type'] === 'video' ) {
+                    } else if ( $field_type === 'image' || $field_type === 'file' || $field_type === 'audio' || $field_type === 'video' ) {
                         # use only filename for images and files
                         $label = ( $i = strrpos( $value, '/' ) ) !== FALSE ? substr( $value, $i + 1 ) : $value;
-                    } else if ( $field['type'] === 'date' ) {
+                    } else if ( $field_type === 'date' ) {
                         $label = date( Search_Types_Custom_Fields_Widget::DATE_FORMAT, $value );
-                    } else if ( $field['type'] === 'url' ) {
+                    } else if ( $field_type === 'url' ) {
                         # for URLs chop off http://
                         if ( substr_compare( $value, 'http://', 0, 7 ) === 0 ) { $label = substr( $value, 7 ); }
                         else if ( substr_compare( $value, 'https://', 0, 8 ) === 0 ) { $label = substr( $value, 8 ); }
@@ -784,26 +801,28 @@ EOD
     <?php echo "$label ($count)"; ?><br>
 <?php
                 }   # foreach ( $field['values'] as $value => $count ) {
-                if ( $number == $SQL_LIMIT && ( $field['type'] != 'child_of'
-                    && $field['type'] != 'parent_of' && $field['type'] != 'checkboxes' && $field['type'] != 'radio'
-                    && $field['type'] != 'select' ) ) {
+                if ( $number == $SQL_LIMIT && ( $field_type !== 'child_of' && $field_type !== 'parent_of' && $field_type !== 'checkboxes'
+                    && $field_type !== 'radio' && $field_type !== 'select' ) ) {
                     # only show optional input textbox if there are more than SQL_LIMIT items for fields with user specified values
 ?>
 <input id="<?php echo $meta_key . Search_Types_Custom_Fields_Widget::OPTIONAL_TEXT_VALUE_SUFFIX; ?>"
     name="<?php echo $meta_key . Search_Types_Custom_Fields_Widget::OPTIONAL_TEXT_VALUE_SUFFIX; ?>"
-    class="scpbcfw-search-fields-for-input" type="text" placeholder="--Enter Search Value--">
+    class="scpbcfw-search-fields-for-input" type="text"
+    placeholder="<?php _e( '--Enter Search Value--', Search_Types_Custom_Fields_Widget::LANGUAGE_DOMAIN ); ?>">
 <?php
                 }
-                if ( $field['type'] === 'numeric' || $field['type'] === 'date' ) {
+                if ( $field_type === 'numeric' || $field_type === 'date' ) {
                     # only show minimum/maximum input textbox for numeric and date custom fields
 ?>
 <h4>Range Search</h4>
 <input id="<?php echo $meta_key . Search_Types_Custom_Fields_Widget::OPTIONAL_MINIMUM_VALUE_SUFFIX; ?>"
     name="<?php echo $meta_key . Search_Types_Custom_Fields_Widget::OPTIONAL_MINIMUM_VALUE_SUFFIX; ?>"
-    class="scpbcfw-search-fields-for-input" type="text" placeholder="--Enter Minimum Value--">
+    class="scpbcfw-search-fields-for-input" type="text"
+    placeholder="<?php _e( '--Enter Minimum Value--', Search_Types_Custom_Fields_Widget::LANGUAGE_DOMAIN ); ?>">
 <input id="<?php echo $meta_key . Search_Types_Custom_Fields_Widget::OPTIONAL_MAXIMUM_VALUE_SUFFIX; ?>"
     name="<?php echo $meta_key . Search_Types_Custom_Fields_Widget::OPTIONAL_MAXIMUM_VALUE_SUFFIX; ?>"
-    class="scpbcfw-search-fields-for-input" type="text" placeholder="--Enter Maximum Value--">
+    class="scpbcfw-search-fields-for-input" type="text"
+    placeholder="<?php _e( '--Enter Maximum Value--', Search_Types_Custom_Fields_Widget::LANGUAGE_DOMAIN ); ?>">
 <?php
                 }
 ?>
@@ -812,10 +831,10 @@ EOD
 <?php
             }
         }   # foreach ( $selected as $selection ) {
-        unset( $field, $wpcf_field );
         die();
     } );   # add_action( 'wp_ajax_nopriv_' . Search_Types_Custom_Fields_Widget::GET_FORM_FOR_POST_TYPE, function() {
 } else {   # if ( is_admin() ) {
+    
     add_action( 'wp_head', function( ) {
 ?>
 <script type="text/javascript">
@@ -823,16 +842,28 @@ var ajaxurl="<?php echo admin_url( 'admin-ajax.php' ); ?>";
 </script>
 <?php
     } );
+    
     add_action( 'wp_enqueue_scripts', function( ) {
         wp_enqueue_style(  'stcfw-search', plugins_url( 'stcfw-search.css', __FILE__ ) );
         wp_enqueue_script( 'stcfw-search', plugins_url( 'stcfw-search.js',  __FILE__ ), [ 'jquery' ] );
+        wp_localize_script( 'stcfw-search', 'stcfwSearchTranslations', [
+            'open' => __( 'Open', Search_Types_Custom_Fields_Widget::LANGUAGE_DOMAIN ),
+            'close' => __( 'Close', Search_Types_Custom_Fields_Widget::LANGUAGE_DOMAIN )
+        ] );
     } );
+    
     add_action( 'parse_query', function( &$query ) {
-        if ( !$query->is_main_query() || !array_key_exists( 'search_types_custom_fields_form', $_REQUEST ) ) { return; }
-        $option = get_option( $_REQUEST['search_types_custom_fields_widget_option'] );
-        $number = $_REQUEST['search_types_custom_fields_widget_number'];
-        if ( isset( $option[$number]['set_is_search'] ) ) { $query->is_search = true; }
+        if ( !$query->is_main_query() || !array_key_exists( 'search_types_custom_fields_form', $_REQUEST ) ) {
+            return;
+        }
+        $option = get_option( $_REQUEST[ 'search_types_custom_fields_widget_option' ] );
+        $number = $_REQUEST[ 'search_types_custom_fields_widget_number' ];
+        if ( isset( $option[ $number ][ 'set_is_search' ] ) ) {
+            # depending on the theme this may display excerpts instead of the full post
+            $query->is_search = true;
+        }
     } );
+    
     add_filter( 'posts_where', function( $where, $query ) {
         global $wpdb;
         if ( !$query->is_main_query() || !array_key_exists( 'search_types_custom_fields_form', $_REQUEST ) ) {
@@ -904,48 +935,60 @@ EOD
                 continue;
             }
             if ( !is_array( $values) ) {
-                if ( $values ) { $values = array( $values ); }
-                else { continue; }
+                if ( $values ) {
+                    $values = [ $values ];
+                } else {
+                    continue;
+                }
             }
             $sql2 = '';   # holds meta_value = sql
             $sql3 = '';   # holds meta_value min/max sql
             foreach ( $values as $value ) {
-                if ( $sql2 ) { $sql2 .= ' OR '; }
+                if ( $sql2 ) {
+                    $sql2 .= ' OR ';
+                }
                 if ( strpos( $key, 'inverse_' ) === 0 ) {
                     # parent of is the inverse of child of so ...
-                    if ( !$value ) { continue; }
+                    if ( !$value ) {
+                        continue;
+                    }
                     $sql2 .= '( w.meta_key = "' . substr( $key, strpos( $key, '_wpcf_belongs_' ) ) . "\" AND w.post_id = $value )";
                 } else if ( strpos( $key, '_wpcf_belongs_' ) === 0 ) {
                     # child of is like a custom field except the name is special so ...
-                    if ( !$value ) { continue; }
+                    if ( !$value ) {
+                        continue;
+                    }
                     $sql2 .= "( w.meta_key = '$key' AND w.meta_value = $value )";
                 } else {
-                    $wpcf_field =& $wpcf_fields[substr( $key, 5 )];
+                    $wpcf_field = $wpcf_fields[ substr( $key, 5 ) ];
+                    $wpcf_field_type = $wpcf_field[ 'type' ];
                     if ( is_array( $value ) ) {
                         if ( $sql2 ) { $sql2 = substr( $sql2, 0, -4 ); }
                         # check for minimum/maximum operation
-                        if ( ( $is_min = $value['operator'] === 'minimum' ) || ( $is_max = $value['operator'] === 'maximum' ) ) {
-                            if ( $wpcf_field['type'] === 'date' ) {
+                        if ( ( $is_min = $value[ 'operator' ] === 'minimum' ) || ( $is_max = $value[ 'operator' ] === 'maximum' ) ) {
+                            if ( $wpcf_field_type === 'date' ) {
                                 # for dates convert to timestamp range
-                                list( $t0, $t1 ) = Search_Types_Custom_Fields_Widget::get_timestamp_from_string( $value['value'] );
+                                list( $t0, $t1 ) = Search_Types_Custom_Fields_Widget::get_timestamp_from_string( $value[ 'value' ] );
                                 if ( $is_min ) {
                                     # for minimum use start of range
-                                    $value['value'] = $t0;
+                                    $value[ 'value' ] = $t0;
                                 } else {
                                     # for maximum use end of range
-                                    $value['value'] = $t1;
+                                    $value[ 'value' ] = $t1;
                                 }
                             }
-                            if ( $sql3 ) { $sql3 .= ' AND '; }
+                            if ( $sql3 ) {
+                                $sql3 .= ' AND ';
+                            }
                             if ( $is_min ) {
-                                $sql3 .= $wpdb->prepare( "( w.meta_key = %s AND w.meta_value >= %d )", $key, $value['value'] );
+                                $sql3 .= $wpdb->prepare( "( w.meta_key = %s AND w.meta_value >= %d )", $key, $value[ 'value' ] );
                             } else if ( $is_max ) {
-                                $sql3 .= $wpdb->prepare( "( w.meta_key = %s AND w.meta_value <= %d )", $key, $value['value'] );
+                                $sql3 .= $wpdb->prepare( "( w.meta_key = %s AND w.meta_value <= %d )", $key, $value[ 'value' ] );
                             }
                         }
-                    } else if ( $wpcf_field['type'] !== 'checkbox' && !$value ) {
+                    } else if ( $wpcf_field_type !== 'checkbox' && !$value ) {
                         # skip false values except for single checkbox
-                    } else if ( $wpcf_field['type'] === 'date' ) {
+                    } else if ( $wpcf_field_type === 'date' ) {
                         # date can be tricky if user did not enter a complete - to the second - timestamp
                         # need to search on range in that case
                         if ( is_numeric( $value ) ) {
@@ -960,17 +1003,20 @@ EOD
                             }
                         }
                     } else {
-                        if ( $wpcf_field['type'] === 'radio' || $wpcf_field['type'] === 'select' ) {
+                        $wpcf_field_data = $wpcf_field[ 'data' ];
+                        if ( $wpcf_field_type === 'radio' || $wpcf_field_type === 'select' ) {
                             # for radio and select change value from option key to its value
-                            $value = $wpcf_field['data']['options'][$value]['value'];
-                        } else if ( $wpcf_field['type'] === 'checkboxes' ) {
+                            $value = $wpcf_field_data[ 'options' ][ $value ][ 'value' ];
+                        } else if ( $wpcf_field_type === 'checkboxes' ) {
                             # checkboxes are tricky since the value bound to 0 means unchecked so must also check the bound value
-                            $options =& $wpcf_field['data']['options'];
-                            $value = 's:' . strlen($value) .':"' .$value . '";a:1:{i:0;s:' . strlen( $options[$value]['set_value'] ) . ':"'
-                                . $options[$value]['set_value'] . '";}';
-                        } else if ( $wpcf_field['type'] === 'checkbox' ) {
+                            $options_value_set_value = $wpcf_field_data[ 'options' ][ $value ][ 'set_value' ];
+                            $value = 's:' . strlen( $value ) .':"' .$value . '";a:1:{i:0;s:' . strlen( $options_value_set_value ) . ':"'
+                                . $options_value_set_value . '";}';
+                        } else if ( $wpcf_field_type === 'checkbox' ) {
                             # checkbox is tricky since the value bound to 0 means unchecked so must also check the bound value
-                            if ( $value ) { $value = $wpcf_field['data']['set_value']; }
+                            if ( $value ) {
+                                $value = $wpcf_field_data[ 'set_value' ];
+                            }
                         }
                         # TODO: LIKE may match more than we want on serialized array of numeric values - false match on numeric indices
                         $sql2 .= $wpdb->prepare( "( w.meta_key = %s AND w.meta_value LIKE %s )", $key, "%%$value%%" );
@@ -1047,7 +1093,9 @@ EOD
             $ids1 = FALSE;
         }
         $ids = Search_Types_Custom_Fields_Widget::join_arrays( $and_or, $ids0, $ids1 );
-        if ( $and_or === 'AND' && $ids !== FALSE && !$ids ) { return ' AND 1 = 2 '; }
+        if ( $and_or === 'AND' && $ids !== FALSE && !$ids ) {
+            return ' AND 1 = 2 ';
+        }
         # do post attachments
         if ( array_key_exists( 'pst-std-attachment', $_REQUEST ) && $_REQUEST['pst-std-attachment'] ) {
             $post_attachments = implode( ',', array_map( function( $attachment ) {
@@ -1107,12 +1155,15 @@ EOD
             $where = ' AND 1 = 2 ';
         }
         return $where;
-    }, 10, 2 );
-    if ( isset( $_REQUEST['search_types_custom_fields_show_using_macro'] )
-        && $_REQUEST['search_types_custom_fields_show_using_macro'] === 'use macro' ) {
+    }, 10, 2 );   # add_filter( 'posts_where', function( $where, $query ) {
+
+    if ( isset( $_REQUEST[ 'search_types_custom_fields_show_using_macro' ] )
+        && $_REQUEST[ 'search_types_custom_fields_show_using_macro' ] === 'use macro' ) {
         # for alternate output format do not page output
         add_filter( 'post_limits', function( $limit, &$query ) {
-            if ( !$query->is_main_query() ) { return $limit; }
+            if ( !$query->is_main_query( ) ) {
+                return $limit;
+            }
             return ' ';
         }, 10, 2 );
         add_action( 'wp_enqueue_scripts', function( ) {
@@ -1123,15 +1174,15 @@ EOD
                 wp_enqueue_style( 'search_results_table', plugins_url( 'search-results-table.css', __FILE__ ) );
             }
         } );
-        add_action( 'template_redirect', function() {
+        add_action( 'template_redirect', function( ) {
             global $wp_query;
             global $wpdb;
             # in this case a template is dynamically constructed and returned
             # get the list of posts
             $posts = array_map( function( $post ) { return $post->ID; }, $wp_query->posts );
             $posts_imploded = implode( ', ', $posts );
-            $number = $_REQUEST['search_types_custom_fields_widget_number'];
-            $option = get_option( $_REQUEST['search_types_custom_fields_widget_option'] )[ $number ];
+            $number = $_REQUEST[ 'search_types_custom_fields_widget_number' ];
+            $option = get_option( $_REQUEST[ 'search_types_custom_fields_widget_option' ] )[ $number ];
             # get the applicable fields from the options for this widget
             if ( array_key_exists( 'scpbcfw-show-' . $_REQUEST[ 'post_type' ], $option ) ) {
                 # display fields explicitly specified for post type
@@ -1153,13 +1204,13 @@ EOD
             wp_enqueue_script( 'jquery' );
             wp_enqueue_script( 'jquery.tablesorter.min', plugins_url( 'jquery.tablesorter.min.js', __FILE__ ),
                 array( 'jquery' ) );
-            add_action( 'wp_head', function () {
+            add_action( 'wp_head', function( ) {
 ?>
 <script type="text/javascript">
     jQuery(document).ready(function(){jQuery("table.tablesorter").tablesorter();}); 
 </script>
 <?php
-            });
+            } );
             get_header( );
             # then do the body content
             $wpcf_fields = get_option( 'wpcf-fields', [ ] );
@@ -1173,8 +1224,7 @@ EOD
 EOD;
             # fix taxonomy names for use as titles
             foreach ( $fields as $field ) {
-                if ( substr_compare( $field, 'tax-cat-', 0, 8, false ) === 0
-                    || substr_compare( $field, 'tax-tag-', 0, 8, false ) === 0 ) {
+                if ( substr_compare( $field, 'tax-cat-', 0, 8, FALSE ) === 0 || substr_compare( $field, 'tax-tag-', 0, 8, FALSE ) === 0 ) {
                     $field = substr( $field, 8 );
                     $labels = get_taxonomy( $field )->labels;
                     $field = isset( $labels->singular_name ) ? $labels->singular_name : $labels->name;                    
@@ -1184,7 +1234,7 @@ EOD;
                     $field = 'Author';
                 } else if ( $field === 'pst-std-post_content' ) {
                     $field = 'Excerpt';
-                } else if ( substr_compare( $field, 'wpcf-', 0, 5, false ) === 0 ) {
+                } else if ( substr_compare( $field, 'wpcf-', 0, 5, FALSE ) === 0 ) {
                     $field = $wpcf_fields[ substr( $field, 5 ) ][ 'name' ];
                 } else if ( substr_compare( $field, '_wpcf_belongs_', 0, 14 ) === 0 ) {
                     $field = substr( $field, 14, -3 );
@@ -1211,8 +1261,7 @@ EOD
 EOD;
                 foreach ( $fields as $field ) {
                     $td = '<td></td>';
-                    if ( substr_compare( $field, 'tax-cat-', 0, 8, false ) === 0
-                        || substr_compare( $field, 'tax-tag-', 0, 8, false ) === 0 ) {
+                    if ( substr_compare( $field, 'tax-cat-', 0, 8, FALSE ) === 0 || substr_compare( $field, 'tax-tag-', 0, 8, FALSE ) === 0 ) {
                         $taxonomy = substr( $field, 8 );
                         # TODO: may be more efficient to get the terms for all the posts in one query
                         if ( is_array( $terms = get_the_terms( $post, $taxonomy ) ) ) {
@@ -1244,14 +1293,14 @@ EOD
                                             AND m.meta_key = '$meta_key' AND m.meta_value IN ( $posts_imploded )
 EOD
                                     , OBJECT );
-                                $values = array();
+                                $values = [ ];
                                 foreach ( $results as $result ) {
-                                    $values[$result->meta_value][] = $result->post_id;
+                                    $values[ $result->meta_value ][ ] = $result->post_id;
                                 }
-                                $parent_of_values[$field] = $values;
+                                $parent_of_values[ $field ] = $values;
                                 unset( $values );
                             }
-                            $value = array_key_exists( $post, $parent_of_values[$field] ) ? $parent_of_values[$field][$post] : null;
+                            $value = array_key_exists( $post, $parent_of_values[$field] ) ? $parent_of_values[$field][$post] : NULL;
                         }
                         # for child of and parent of use post title instead of post id for label and embed in an <a> html element
                         if ( $value ) {
@@ -1275,13 +1324,13 @@ EOD
                                 , OBJECT );
                             $attachments = array();
                             foreach ( $results as $result ) {
-                                $attachments[$result->post_parent][] = $result->ID;
+                                $attachments[ $result->post_parent ][ ] = $result->ID;
                             }
                         }
                         if ( array_key_exists( $post, $attachments ) ) {
                             $label = implode( ', ', array_map( function( $v ) use ( &$post_titles ) {
                                 return "<a href=\"{$post_titles[$v]->guid}\">{$post_titles[$v]->post_title}</a>";
-                            }, $attachments[$post] ) );
+                            }, $attachments[ $post ] ) );
                             $td = "<td class=\"scpbcfw-result-table-detail-$field\">$label</td>";
                         }
                     } else if ( $field === 'pst-std-post_author' ) {
@@ -1295,7 +1344,7 @@ EOD
                                 , OBJECT_K );
                         }
                         if ( array_key_exists( $post, $authors ) ) {
-                            $author = $authors[$post];
+                            $author = $authors[ $post ];
                             # if author has a url then display author name as a link to his url
                             if ( $author->user_url ) {
                                 $label = "<a href=\"$author->user_url\">$author->display_name</a>";
@@ -1337,23 +1386,27 @@ EOD
                                 , OBJECT );
                             $values = array();
                             foreach( $results as $result ) {
-                                $values[$result->post_id][] = $result->meta_value;
+                                $values[ $result->post_id ][ ] = $result->meta_value;
                             }
-                            $field_values[$field] = $values;
+                            $field_values[ $field ] = $values;
                             unset( $values );
                         }
-                        if ( array_key_exists( $post, $field_values[$field] )
-                            && ( $field_values = $field_values[$field][$post] ) ) {
-                            $wpcf_field =& $wpcf_fields[substr( $field, 5 )];
+                        if ( array_key_exists( $post, $field_values[ $field ] ) && ( $field_values = $field_values[ $field ][ $post ] ) ) {
+                            $wpcf_field = $wpcf_fields[ substr( $field, 5 ) ];
+                            $wpcf_field_type = $wpcf_field[ 'type' ];
+                            $wpcf_field_data = array_key_exists( 'data', $wpcf_field ) ? $wpcf_field['data'] : NULL;
+                            $wpcf_field_data_options = array_key_exists( 'options', $wpcf_field_data ) ? $wpcf_field_data[ 'options' ] : NULL;
                             $class = '';
-                            $labels = array();
+                            $labels = [ ];
                             foreach ( $field_values as $value ) {
-                                if ( !$value && $wpcf_field['type'] !== 'checkbox' ) { continue; }
+                                if ( !$value && $wpcf_field_type !== 'checkbox' ) {
+                                    continue;
+                                }
                                 if ( is_serialized( $value ) ) {
                                     # serialized meta_value contains multiple values so need to unpack them and process them individually
                                     $unserialized = unserialize( $value );
                                      if ( is_array( $unserialized ) ) {
-                                        if ( $wpcf_field['type'] === 'checkboxes' ) {
+                                        if ( $wpcf_field_type === 'checkboxes' ) {
                                             # for checkboxes use the unique option key as the value of the checkbox
                                             $values = array_keys( $unserialized );
                                         } else {
@@ -1362,15 +1415,15 @@ EOD
                                     } else {
                                         error_log( '##### action:template_redirect()[UNEXPECTED!]:$unserialized='
                                             . print_r( $unserialized, true ) );
-                                        $values = array( $unserialized );
+                                        $values = [ $unserialized ];
                                     }
                                 } else {
-                                    if ( $wpcf_field['type'] === 'radio' || $wpcf_field['type'] === 'select' ) {
+                                    if ( $wpcf_field_type === 'radio' || $wpcf_field_type === 'select' ) {
                                         # for radio and select use the unique option key as the value of the radio or select
-                                        $values = array( Search_Types_Custom_Fields_Widget::search_wpcf_field_options(
-                                            $wpcf_field['data']['options'], 'value', $value ) );
+                                        $values = [ Search_Types_Custom_Fields_Widget::search_wpcf_field_options(
+                                            $wpcf_field_data_options, 'value', $value ) ];
                                     } else {
-                                        $values = array( $value );
+                                        $values = [ $value ];
                                     }
                                 }
                                 unset( $value );
@@ -1381,60 +1434,61 @@ EOD
                                         $url = $value;
                                     }
                                     $current =& $label[ ];
-                                    if ( $wpcf_field[ 'type' ] === 'radio' ) {
+                                    if ( $wpcf_field_type === 'radio' ) {
                                         # for radio replace option key with something more user friendly
+                                        $wpcf_field_data_options_value = $wpcf_field_data_options[ $value ];
                                         if ( isset( $option[ 'use_simplified_labels_for_select' ] ) ) {
-                                            $current = $wpcf_field[ 'data' ][ 'display' ] === 'value'
-                                                ? $wpcf_field[ 'data' ][ 'options' ][ $value ][ 'display_value' ]
-                                                : $wpcf_field[ 'data' ][ 'options' ][ $value ][ 'title' ];
+                                            $current = $wpcf_field_data[ 'display' ] === 'value' ? $wpcf_field_data_options_value[ 'display_value' ]
+                                                : $wpcf_field_data_options_value[ 'title' ];
                                         } else {
-                                            $current = $wpcf_field[ 'data' ][ 'options' ][ $value ][ 'title' ]
-                                                . ( $wpcf_field[ 'data' ][ 'display' ] === 'value'
-                                                    ? ( '(' . $wpcf_field[ 'data' ][ 'options' ][ $value ][ 'display_value' ] . ')' )
-                                                    : ( '(' . $wpcf_field[ 'data' ][ 'options' ][ $value ][ 'value' ] . ')' ) );
+                                            $current = $wpcf_field_data_options_value[ 'title' ]
+                                                . ( $wpcf_field_data[ 'display' ] === 'value' ? ( '(' . $wpcf_field_data_options_value[ 'display_value' ] . ')' )
+                                                    : ( '(' . $wpcf_field_data_options_value[ 'value' ] . ')' ) );
                                         }
-                                    } else if ( $wpcf_field[ 'type' ] === 'select' ) {
+                                    } else if ( $wpcf_field_type === 'select' ) {
+                                        $wpcf_field_data_options_value = $wpcf_field_data_options[ $value ];
                                         # for select replace option key with something more user friendly
                                         if ( isset( $option[ 'use_simplified_labels_for_select' ] ) ) {
-                                            $current = $wpcf_field[ 'data' ][ 'options' ][ $value ][ 'title' ];
+                                            $current = $wpcf_field_data_options_value[ 'title' ];
                                         } else {
-                                            $current = $wpcf_field[ 'data' ][ 'options' ][ $value ][ 'value' ]
-                                                . '(' . $wpcf_field[ 'data' ][ 'options' ][ $value ][ 'title' ] . ')';
+                                            $current = $wpcf_field_data_options_value[ 'value' ]
+                                                . '(' . $wpcf_field_data_options_value[ 'title' ] . ')';
                                         }
-                                    } else if ( $wpcf_field[ 'type' ] === 'checkboxes' ) {
+                                    } else if ( $wpcf_field_type === 'checkboxes' ) {
                                         # checkboxes are handled very differently from radio and select 
                                         # Why? seems that the radio/select way would work here also and be simpler
+                                        $wpcf_field_data_options_value = $wpcf_field_data_options[ $value ];
                                         if ( isset( $option[ 'use_simplified_labels_for_select' ] ) ) {
-                                            if ( $wpcf_field[ 'data' ][ 'options' ][ $value ][ 'display' ] == 'value' ) {
-                                                $current = $wpcf_field[ 'data' ][ 'options' ][ $value ][ 'display_value_selected' ];
+                                            if ( $wpcf_field_data_options_value[ 'display' ] === 'value' ) {
+                                                $current = $wpcf_field_data_options_value[ 'display_value_selected' ];
                                             } else {
-                                                $current = $wpcf_field[ 'data' ][ 'options' ][ $value ][ 'title' ];
+                                                $current = $wpcf_field_data_options_value[ 'title' ];
                                             }
                                         } else {
-                                            $current = $wpcf_field[ 'data' ][ 'options' ][ $value ][ 'title' ];
-                                             if ( $wpcf_field[ 'data' ][ 'options' ][ $value ][ 'display' ] === 'db' ) {
-                                                $current .= ' (' . $wpcf_field[ 'data' ][ 'options' ][ $value ][ 'set_value' ] . ')';
-                                            } else if ( $wpcf_field[ 'data' ][ 'options' ][ $value ][ 'display' ] === 'value' ) {
-                                                $current .= ' (' . $wpcf_field[ 'data' ][ 'options' ][ $value ][ 'display_value_selected' ] . ')';
+                                            $current = $wpcf_field_data_options_value[ 'title' ];
+                                             if ( $wpcf_field_data_options_value[ 'display' ] === 'db' ) {
+                                                $current .= ' (' . $wpcf_field_data_options_value[ 'set_value' ] . ')';
+                                            } else if ( $wpcf_field_data_options_value[ 'display' ] === 'value' ) {
+                                                $current .= ' (' . $wpcf_field_data_options_value[ 'display_value_selected' ] . ')';
                                             }
                                         }
-                                    } else if ( $wpcf_field['type'] === 'checkbox' ) {
-                                        if ( $wpcf_field['data']['display'] === 'db' ) {
+                                    } else if ( $wpcf_field_type === 'checkbox' ) {
+                                        if ( $wpcf_field_data[ 'display' ] === 'db' ) {
                                             $current = $value;
                                         } else {
                                             if ( $value ) {
-                                                $current = $wpcf_field['data']['display_value_selected'];
+                                                $current = $wpcf_field_data[ 'display_value_selected' ];
                                             } else {
-                                                $current = $wpcf_field['data']['display_value_not_selected'];
+                                                $current = $wpcf_field_data[ 'display_value_not_selected' ];
                                             }
                                         }
-                                    } else if ( $wpcf_field['type'] === 'image' || $wpcf_field['type'] === 'file'
-                                        || $wpcf_field['type'] === 'audio' || $wpcf_field['type'] === 'video' ) {
+                                    } else if ( $wpcf_field_type === 'image' || $wpcf_field_type === 'file' || $wpcf_field_type === 'audio'
+                                        || $wpcf_field_type === 'video' ) {
                                         # use only filename for images and files
                                         $current = ( $i = strrpos( $value, '/' ) ) !== FALSE ? substr( $value, $i + 1 ) : $value;
-                                    } else if ( $wpcf_field['type'] === 'date' ) {
+                                    } else if ( $wpcf_field_type === 'date' ) {
                                         $current = date( Search_Types_Custom_Fields_Widget::DATE_FORMAT, $value );
-                                    } else if ( $wpcf_field['type'] === 'url' ) {
+                                    } else if ( $wpcf_field_type === 'url' ) {
                                         # for URLs chop off http://
                                         if ( substr_compare( $value, 'http://', 0, 7 ) === 0 ) {
                                             $current = substr( $value, 7 );
@@ -1445,7 +1499,7 @@ EOD
                                         }
                                         # and provide line break hints
                                         $current = str_replace( '/', '/&#8203;', $current );
-                                    } else if ( $wpcf_field['type'] === 'numeric' ) {
+                                    } else if ( $wpcf_field_type === 'numeric' ) {
                                         $class = ' scpbcfw-result-table-detail-numeric';
                                         $current = $value;
                                     } else {
@@ -1457,13 +1511,12 @@ EOD
                                     }
                                     unset( $url, $current );
                                 }
-                                $labels[] = implode( ', ', $label );
+                                $labels[ ] = implode( ', ', $label );
                                 unset( $value, $values, $label );
                             }
-                            unset( $wpcf_field );
                             $labels = implode( ', ', $labels );
                             $td = "<td class=\"scpbcfw-result-table-detail-{$field}{$class}\">$labels</td>";
-                        }
+                        }   # if ( array_key_exists( $post, $field_values[$field] ) && ( $field_values = $field_values[$field][$post] ) ) {
                     }
                     $content .= $td;
                 }
@@ -1471,8 +1524,8 @@ EOD
             }
             $content .= '</tbody></table></div></div>';
             echo $content;
-            get_footer();
-            exit();
+            get_footer( );
+            exit( );
         } );
     }   # if ( isset( $_REQUEST['search_types_custom_fields_show_using_macro'] )
 }   # } else {   # if ( is_admin() ) {

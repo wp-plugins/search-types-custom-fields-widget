@@ -17,11 +17,11 @@ jQuery(document).ready(function(){
                 form.find("input#scpbcfw-search-fields-submit").prop("disabled",false);
                 form.find("div#scpbcfw-search-fields-submit-container").css("display",response?"block":"none");
                 form.find("div.scpbcfw-display-button").click(function(event){
-                    if(jQuery(this).text()=="Open"){
-                        jQuery(this).text("Close");
+                    if(jQuery(this).text()==stcfwSearchTranslations.open){
+                        jQuery(this).text(stcfwSearchTranslations.close);
                         jQuery("div.scpbcfw-search-field-values",this.parentNode).css("display","block");
                     }else{
-                        jQuery(this).text("Open");
+                        jQuery(this).text(stcfwSearchTranslations.open);
                         jQuery("div.scpbcfw-search-field-values",this.parentNode).css("display","none");
                     }
                     return false;

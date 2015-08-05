@@ -5,11 +5,11 @@ function stcfwInitialize(target){
     if(stcfwInitialized.indexOf(marker[0])!==-1){return;}
     stcfwInitialized.push(marker[0]);
     jQuery(target).find("div.scpbcfw-admin-display-button").click(function(event){
-        if(jQuery(this).text()=="Open"){
-            jQuery(this).text("Close");
+        if(jQuery(this).text()==stcfwAdminTranslations.open){
+            jQuery(this).text(stcfwAdminTranslations.close);
             jQuery("div.scpbcfw-search-field-values",this.parentNode).css("display","block");
         }else{
-            jQuery(this).text("Open");
+            jQuery(this).text(stcfwAdminTranslations.open);
             jQuery("div.scpbcfw-search-field-values",this.parentNode).css("display","none");
         }
         return false;
